@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.0.0</title>
+  <title>Inventario v2.1.0</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -13,39 +13,45 @@
       --tx:#f1f5f9;--mu:#94a3b8;--r:8px
     }
     body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
+    .hidden{display:none!important}
 
     /* OFFLINE */
     #offlineBanner{background:#7c2d12;border-bottom:1px solid #dc2626;color:#fca5a5;
       padding:6px 20px;font-size:.82rem;text-align:center}
-    .hidden{display:none!important}
 
     /* HEADER */
-    header{background:var(--s1);border-bottom:1px solid var(--bd);padding:0 16px;
-      display:flex;align-items:center;gap:10px;height:52px;flex-wrap:nowrap;overflow-x:auto}
+    header{background:var(--s1);border-bottom:1px solid var(--bd);padding:0 14px;
+      display:flex;align-items:center;gap:8px;height:52px;overflow-x:auto;flex-shrink:0}
     .brand{display:flex;align-items:center;gap:6px;white-space:nowrap}
     .brand h1{font-size:.95rem;font-weight:700;color:var(--ac)}
     .vbadge{font-size:.6rem;font-weight:700;background:var(--s2);border:1px solid var(--bd);
       color:var(--mu);border-radius:4px;padding:2px 6px;cursor:default;user-select:none}
     #saTag{font-size:.65rem;color:var(--warn);font-weight:700;white-space:nowrap}
 
-    .cat-tabs{display:flex;gap:2px}
-    .cat-tab{padding:5px 11px;background:transparent;border:1px solid transparent;border-radius:6px;
-      color:var(--mu);font-size:.8rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s}
+    .cat-tabs{display:flex;gap:2px;flex-shrink:0}
+    .cat-tab{padding:5px 10px;background:transparent;border:1px solid transparent;border-radius:6px;
+      color:var(--mu);font-size:.78rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s}
     .cat-tab:hover{background:var(--s2);color:var(--tx)}
     .cat-tab.active{background:var(--s2);border-color:var(--bd);color:var(--tx)}
 
-    .srch{position:relative;width:190px;flex-shrink:0}
+    /* view toggle (Lista / Mapa) */
+    .vtog{display:flex;background:var(--bg);border:1px solid var(--bd);border-radius:6px;overflow:hidden;flex-shrink:0}
+    .vbtn{padding:5px 10px;background:transparent;border:none;color:var(--mu);
+      font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+    .vbtn.active{background:var(--s2);color:var(--tx)}
+    .vbtn:hover:not(.active){background:var(--s2);color:var(--tx)}
+
+    .srch{position:relative;width:180px;flex-shrink:0}
     .srch input{width:100%;padding:6px 10px 6px 28px;background:var(--bg);border:1px solid var(--bd);
       border-radius:6px;color:var(--tx);font-size:.82rem;outline:none}
     .srch input:focus{border-color:var(--ac)}
     .srch svg{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--mu);pointer-events:none}
 
     .role-tog{display:flex;background:var(--bg);border:1px solid var(--bd);border-radius:6px;overflow:hidden;flex-shrink:0}
-    .role-btn{padding:5px 11px;background:transparent;border:none;color:var(--mu);
+    .role-btn{padding:5px 10px;background:transparent;border:none;color:var(--mu);
       font-size:.76rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
     .role-btn.active{background:var(--ac);color:#fff}
     .role-btn:hover:not(.active){background:var(--s2);color:var(--tx)}
-
     .hacts{display:flex;gap:6px;align-items:center;flex-shrink:0}
 
     /* BUTTONS */
@@ -55,21 +61,21 @@
     .bp{background:var(--ac);color:#fff}.bp:hover{background:var(--ach)}
     .bs{background:var(--s2);color:var(--tx);border:1px solid var(--bd)}.bs:hover{background:var(--bd)}
     .bd2{background:var(--dan);color:#fff}
-    .bsm{padding:4px 9px;font-size:.75rem}
+    .bsm{padding:4px 8px;font-size:.74rem}
     .bic{padding:5px 7px;background:transparent;color:var(--mu);border:1px solid var(--bd)}
     .bic:hover{color:var(--tx);background:var(--s2)}
 
     /* MAIN */
-    main{padding:14px 16px}
-    .stats{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-    .sc{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:10px 14px;min-width:105px}
-    .sc .sv{font-size:1.35rem;font-weight:800}.sc .sl{font-size:.68rem;color:var(--mu);margin-top:2px}
+    main{padding:12px 14px;display:flex;flex-direction:column;gap:12px}
+    .stats{display:flex;gap:8px;flex-wrap:wrap}
+    .sc{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:9px 13px;min-width:100px}
+    .sc .sv{font-size:1.3rem;font-weight:800}.sc .sl{font-size:.66rem;color:var(--mu);margin-top:2px}
     .sc.ok .sv{color:var(--ok)}.sc.w .sv{color:var(--warn)}.sc.d .sv{color:var(--dan)}
 
     /* FILTERS */
-    .filters{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+    .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .filters select{background:var(--s1);border:1px solid var(--bd);border-radius:6px;
-      color:var(--tx);padding:5px 10px;font-size:.78rem;outline:none}
+      color:var(--tx);padding:5px 9px;font-size:.78rem;outline:none}
     .filters select:focus{border-color:var(--ac)}
     .fl{font-size:.72rem;color:var(--mu)}
 
@@ -79,64 +85,93 @@
     thead th{background:var(--s1);padding:9px 11px;text-align:left;font-size:.7rem;font-weight:700;
       color:var(--mu);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--bd);
       white-space:nowrap;cursor:pointer;user-select:none}
-    thead th:hover{color:var(--tx)}
-    thead th.sorted{color:var(--ac)}
+    thead th:hover{color:var(--tx)} thead th.sorted{color:var(--ac)}
     tbody tr{border-bottom:1px solid var(--bd);transition:background .1s}
     tbody tr:last-child{border-bottom:none}
     tbody tr:hover{background:var(--s2)}
     td{padding:7px 11px;vertical-align:middle}
-    .tn{text-align:right;font-variant-numeric:tabular-nums}
-    .tb{text-align:right;font-weight:700}
-    .tr2{text-align:right;color:var(--warn);font-weight:700}
-    .tr2.z{color:var(--mu);font-weight:400}
-
+    .tn{text-align:right}.tb{text-align:right;font-weight:700}
+    .tr2{text-align:right;color:var(--warn);font-weight:700}.tr2.z{color:var(--mu);font-weight:400}
     .badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:.68rem;font-weight:700;white-space:nowrap}
     .bg{background:rgba(34,197,94,.13);color:#4ade80}
     .by{background:rgba(234,179,8,.13);color:#facc15}
     .br{background:rgba(239,68,68,.13);color:#f87171}
     .bmu{background:rgba(148,163,184,.1);color:var(--mu)}
-
     .pos-chip{background:var(--s2);border:1px solid var(--bd);border-radius:4px;
       padding:2px 7px;font-size:.72rem;font-weight:600;color:var(--ac);white-space:nowrap}
     .cat-dot{font-size:.68rem;color:var(--mu)}
-
     .ra{display:flex;gap:4px;justify-content:flex-end;opacity:0;transition:opacity .15s}
     tr:hover .ra{opacity:1}
     .qc{display:flex;align-items:center;gap:5px;justify-content:flex-end}
     .qc button{padding:2px 7px;font-size:.8rem;font-weight:700}
     .qv{min-width:28px;text-align:center;font-weight:700}
-
     .empty{text-align:center;padding:50px 20px;color:var(--mu)}
     .empty .ei{font-size:2.2rem;margin-bottom:8px}
     .empty p{font-size:.85rem}
+
+    /* ── MAP VIEW ─────────────────────────────────── */
+    .map-wrap{display:flex;flex-direction:column;gap:14px}
+
+    .fp-container{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);
+      padding:10px;overflow-x:auto}
+    .fp-title{font-size:.72rem;font-weight:700;color:var(--mu);text-transform:uppercase;
+      letter-spacing:.06em;margin-bottom:8px}
+    #fpSVG{width:100%;max-width:860px;display:block;margin:0 auto}
+
+    /* shelf detail panel */
+    .sd-panel{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:14px}
+    .sd-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .sd-title{font-size:1rem;font-weight:700}
+    .sd-subtitle{font-size:.72rem;color:var(--mu);margin-top:2px}
+    .sv-tog{display:flex;background:var(--bg);border:1px solid var(--bd);border-radius:6px;overflow:hidden}
+    .sv-btn{padding:5px 12px;background:transparent;border:none;color:var(--mu);
+      font-size:.76rem;font-weight:600;cursor:pointer;transition:all .15s}
+    .sv-btn.active{background:var(--s2);color:var(--tx)}
+
+    /* shelf grid */
+    .sgrid{display:grid;gap:4px}
+    .sgcell{background:var(--s2);border:1px solid var(--bd);border-radius:5px;
+      min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      cursor:pointer;transition:all .15s;padding:4px;position:relative}
+    .sgcell:hover{border-color:var(--ac);transform:scale(1.03)}
+    .sgcell.sh{background:transparent;border:none;font-size:.7rem;font-weight:700;
+      color:var(--mu);min-height:auto;cursor:default;transform:none!important}
+    .sgcell.cell-ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.3)}
+    .sgcell.cell-low{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.3)}
+    .sgcell.cell-out{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3)}
+    .sgcell .cid{font-size:.68rem;font-weight:700;color:var(--mu)}
+    .sgcell .cnt{font-size:.75rem;font-weight:700;color:var(--tx);margin-top:2px}
+    .sgcell .cnames{font-size:.6rem;color:var(--mu);text-align:center;line-height:1.3;
+      max-width:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+    /* iso svg container */
+    #sdIso{overflow-x:auto}
+    #sdIso svg{display:block;margin:0 auto}
 
     /* MODALS */
     .ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;
       align-items:center;justify-content:center}
     .ov.open{display:flex}
     .modal{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:22px;
-      width:460px;max-width:95vw;max-height:90vh;overflow-y:auto}
-    .modal.sm{width:340px}
+      width:480px;max-width:95vw;max-height:90vh;overflow-y:auto}
+    .modal.sm{width:340px}.modal.lg{width:600px}
     .modal h2{font-size:.98rem;font-weight:700;margin-bottom:16px}
     .mf{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
-
     .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
     .fgrid.one{grid-template-columns:1fr}
     .fg{display:flex;flex-direction:column;gap:4px}
     .fg label{font-size:.68rem;color:var(--mu);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
-    .fg input,.fg select,.fg textarea{background:var(--bg);border:1px solid var(--bd);border-radius:6px;
+    .fg input,.fg select{background:var(--bg);border:1px solid var(--bd);border-radius:6px;
       color:var(--tx);padding:7px 10px;font-size:.84rem;outline:none;font-family:inherit}
-    .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--ac)}
+    .fg input:focus,.fg select:focus{border-color:var(--ac)}
     .s2{grid-column:span 2}
-
     .csec{margin-bottom:18px}
     .csec h3{font-size:.72rem;font-weight:700;color:var(--mu);text-transform:uppercase;
       letter-spacing:.06em;margin-bottom:10px;border-bottom:1px solid var(--bd);padding-bottom:5px}
     .crow{display:flex;align-items:center;justify-content:space-between;padding:7px 0;
-      border-bottom:1px solid var(--bd);font-size:.84rem}
+      border-bottom:1px solid var(--bd);font-size:.84rem;gap:8px}
     .crow:last-child{border-bottom:none}
     .cd{font-size:.7rem;color:var(--mu);margin-top:2px}
-
     .tog{position:relative;width:40px;height:22px;flex-shrink:0}
     .tog input{opacity:0;width:0;height:0}
     .tsl{position:absolute;cursor:pointer;inset:0;background:var(--bd);border-radius:22px;transition:.2s}
@@ -144,21 +179,30 @@
       background:#fff;border-radius:50%;transition:.2s}
     .tog input:checked+.tsl{background:var(--ac)}
     .tog input:checked+.tsl:before{transform:translateX(18px)}
-
     .ipreview{background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:11px;
       margin-top:10px;font-size:.81rem}
     .isheet{display:flex;align-items:center;justify-content:space-between;padding:5px 0;
       border-bottom:1px solid var(--bd)}
     .isheet:last-child{border-bottom:none}
 
+    /* shelf config table in config modal */
+    .shelf-cfg-row{display:grid;grid-template-columns:1fr 80px 80px auto;gap:8px;
+      align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)}
+    .shelf-cfg-row:last-child{border-bottom:none}
+    .shelf-cfg-row input{background:var(--bg);border:1px solid var(--bd);border-radius:5px;
+      color:var(--tx);padding:5px 8px;font-size:.82rem;outline:none;width:100%}
+    .shelf-cfg-row input:focus{border-color:var(--ac)}
+    .shelf-cfg-hdr{display:grid;grid-template-columns:1fr 80px 80px auto;gap:8px;
+      padding:4px 0 6px;font-size:.68rem;font-weight:700;color:var(--mu);text-transform:uppercase;
+      letter-spacing:.05em;border-bottom:1px solid var(--bd);margin-bottom:4px}
+
     ::-webkit-scrollbar{width:6px;height:6px}
     ::-webkit-scrollbar-track{background:transparent}
     ::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
 
-    @media(max-width:680px){
+    @media(max-width:700px){
       header{height:auto;padding:8px;flex-wrap:wrap}
-      .cat-tabs{order:10;width:100%}
-      .srch{width:100%}
+      .cat-tabs,.vtog{order:10}
     }
   </style>
 </head>
@@ -171,7 +215,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.0.0</span>
+    <span class="vbadge" id="vbadge">v2.1.0</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
 
@@ -180,6 +224,11 @@
     <button class="cat-tab"        data-cat="Repuestos"    onclick="setCat('Repuestos')">Repuestos</button>
     <button class="cat-tab"        data-cat="Herramientas" onclick="setCat('Herramientas')">Herramientas</button>
     <button class="cat-tab"        data-cat="Insumos"      onclick="setCat('Insumos')">Insumos</button>
+  </div>
+
+  <div class="vtog">
+    <button class="vbtn active" data-view="table" onclick="setView('table')">≡ Lista</button>
+    <button class="vbtn"        data-view="map"   onclick="setView('map')">🗺 Mapa</button>
   </div>
 
   <div class="srch">
@@ -198,22 +247,49 @@
 <main>
   <div class="stats" id="statsBar"></div>
 
-  <div class="filters">
-    <span class="fl">Filtrar:</span>
-    <select id="fPos"    onchange="applyFilters()"><option value="">Todas las posiciones</option></select>
-    <select id="fEstado" onchange="applyFilters()"><option value="">Todos los estados</option></select>
-    <select id="fMarca"  onchange="applyFilters()"><option value="">Todas las marcas</option></select>
+  <!-- ── TABLE VIEW ─────────────────────────── -->
+  <div id="viewTable">
+    <div class="filters">
+      <span class="fl">Filtrar:</span>
+      <select id="fPos"    onchange="applyFilters()"><option value="">Todas las posiciones</option></select>
+      <select id="fEstado" onchange="applyFilters()"><option value="">Todos los estados</option></select>
+      <select id="fMarca"  onchange="applyFilters()"><option value="">Todas las marcas</option></select>
+    </div>
+    <div class="twrap">
+      <table><thead id="thead"></thead><tbody id="tbody"></tbody></table>
+      <div id="emptyState" class="empty hidden">
+        <div class="ei">📭</div>
+        <p>Sin ítems. Importa un Excel o agrega manualmente.</p>
+      </div>
+    </div>
   </div>
 
-  <div class="twrap">
-    <table>
-      <thead id="thead"></thead>
-      <tbody id="tbody"></tbody>
-    </table>
-    <div id="emptyState" class="empty hidden">
-      <div class="ei">📭</div>
-      <p>Sin ítems. Importa un Excel o agrega manualmente.</p>
+  <!-- ── MAP VIEW ───────────────────────────── -->
+  <div id="viewMap" class="hidden map-wrap">
+
+    <div class="fp-container">
+      <div class="fp-title">Planta de bodega — haz clic en un estante</div>
+      <svg id="fpSVG" viewBox="0 0 860 400" xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
+
+    <div id="sdPanel" class="sd-panel hidden">
+      <div class="sd-header">
+        <div>
+          <div class="sd-title" id="sdTitle">Estante</div>
+          <div class="sd-subtitle" id="sdSub"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="sv-tog">
+            <button class="sv-btn active" data-mode="grid" onclick="setSV('grid')">⊞ Grid</button>
+            <button class="sv-btn"        data-mode="iso"  onclick="setSV('iso')">◈ 3D</button>
+          </div>
+          <button class="bic bsm" onclick="document.getElementById('sdPanel').classList.add('hidden')">✕</button>
+        </div>
+      </div>
+      <div id="sdGrid"></div>
+      <div id="sdIso" class="hidden"></div>
+    </div>
+
   </div>
 </main>
 
@@ -250,7 +326,7 @@
       </div>
       <div class="fg">
         <label>POS</label>
-        <input type="text" id="iPos" list="posList" placeholder="Taller, 2do, B1…" />
+        <input type="text" id="iPos" list="posList" placeholder="E1-A1, Taller, 2do…" />
         <datalist id="posList"></datalist>
       </div>
       <div class="fg s2">
@@ -273,26 +349,11 @@
         <label>Modelo</label>
         <input type="text" id="iModel" placeholder="MK6, S9-1…" />
       </div>
-      <div class="fg" id="fBodega">
-        <label>Bodega</label>
-        <input type="number" id="iBodega" min="0" value="0" />
-      </div>
-      <div class="fg" id="fRetirado">
-        <label>Retirado</label>
-        <input type="number" id="iRetirado" min="0" value="0" />
-      </div>
-      <div class="fg" id="fCantidad">
-        <label>Cantidad</label>
-        <input type="number" id="iCantidad" min="0" value="0" />
-      </div>
-      <div class="fg" id="fReal">
-        <label>REAL (conteo físico)</label>
-        <input type="number" id="iReal" placeholder="Opcional" />
-      </div>
-      <div class="fg s2">
-        <label>Notas</label>
-        <input type="text" id="iNotes" placeholder="Referencia, proveedor…" />
-      </div>
+      <div class="fg" id="fBodega"><label>Bodega</label><input type="number" id="iBodega" min="0" value="0" /></div>
+      <div class="fg" id="fRetirado"><label>Retirado</label><input type="number" id="iRetirado" min="0" value="0" /></div>
+      <div class="fg" id="fCantidad"><label>Cantidad</label><input type="number" id="iCantidad" min="0" value="0" /></div>
+      <div class="fg" id="fReal"><label>REAL (conteo físico)</label><input type="number" id="iReal" placeholder="Opcional" /></div>
+      <div class="fg s2"><label>Notas</label><input type="text" id="iNotes" placeholder="Referencia, proveedor…" /></div>
     </div>
     <div class="mf">
       <button class="bs" onclick="closeOv('ovItem')">Cancelar</button>
@@ -308,10 +369,7 @@
     <div style="font-size:.83rem;color:var(--mu);margin-bottom:12px" id="movDesc"></div>
     <input type="hidden" id="movId" /><input type="hidden" id="movType" />
     <div class="fgrid one">
-      <div class="fg">
-        <label>Cantidad</label>
-        <input type="number" id="movQty" min="1" value="1" />
-      </div>
+      <div class="fg"><label>Cantidad</label><input type="number" id="movQty" min="1" value="1" /></div>
     </div>
     <div class="mf">
       <button class="bs" onclick="closeOv('ovMov')">Cancelar</button>
@@ -327,8 +385,7 @@
     <div class="fgrid one" style="gap:12px">
       <div class="fg">
         <label>Archivo (.xlsx / .xls)</label>
-        <input type="file" id="importFile" accept=".xlsx,.xls"
-               onchange="previewImport()" style="color:var(--tx)" />
+        <input type="file" id="importFile" accept=".xlsx,.xls" onchange="previewImport()" style="color:var(--tx)" />
       </div>
       <div class="fg">
         <label>Modo</label>
@@ -349,7 +406,7 @@
 
 <!-- MODAL CONFIG -->
 <div class="ov" id="ovConfig">
-  <div class="modal">
+  <div class="modal lg">
     <h2>⚙️ Configuración — Obrist</h2>
 
     <div class="csec">
@@ -367,16 +424,23 @@
     </div>
 
     <div class="csec">
+      <h3>Distribución de estantes</h3>
+      <div style="font-size:.75rem;color:var(--mu);margin-bottom:8px">
+        POS de celda = <code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">ID-RowCol</code>
+        &nbsp;ej: <code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">E1-A1</code>
+        &nbsp;<code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">E2A-C3</code>
+      </div>
+      <div class="shelf-cfg-hdr">
+        <span>Etiqueta</span><span>Filas</span><span>Cols</span><span></span>
+      </div>
+      <div id="shelfCfgList"></div>
+    </div>
+
+    <div class="csec">
       <h3>Contraseña</h3>
       <div class="fgrid">
-        <div class="fg">
-          <label>Nueva contraseña</label>
-          <input type="password" id="pwd1" placeholder="••••••••" />
-        </div>
-        <div class="fg">
-          <label>Confirmar</label>
-          <input type="password" id="pwd2" placeholder="••••••••" />
-        </div>
+        <div class="fg"><label>Nueva contraseña</label><input type="password" id="pwd1" placeholder="••••••••" /></div>
+        <div class="fg"><label>Confirmar</label><input type="password" id="pwd2" placeholder="••••••••" /></div>
       </div>
       <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
         <button class="bs bsm" onclick="changePwd()">Cambiar</button>
@@ -400,44 +464,56 @@
 </div>
 
 <script>
-const APP_VERSION = 'v2.0.0';
+const APP_VERSION = 'v2.1.0';
 const SK = 'bodega_v2';
 
-// ── STATE ──────────────────────────────────────────────────────────────────────
+// ── DEFAULT SHELF LAYOUT (matches drawing) ────────────────────────────────────
+// Physical order LEFT → RIGHT in the warehouse floor plan
+// Each shelf = one face (one side visible from its aisle)
+const DEFAULT_SHELVES = [
+  { id:'E3C', label:'Estante 3C', aisle:'C', rows:4, cols:5 },
+  { id:'E3B', label:'Estante 3B', aisle:'B', rows:4, cols:5 },
+  { id:'E2B', label:'Estante 2B', aisle:'B', rows:4, cols:5 },
+  { id:'E2A', label:'Estante 2A', aisle:'A', rows:4, cols:5 },
+  { id:'E1',  label:'Estante 1',  aisle:'A', rows:4, cols:5, wall:true },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
 let S = {
   lastSaved: null,
-  cfg: { pwdHash: btoa('obrist'), opCanAdd: false },
+  cfg: { pwdHash: btoa('obrist'), opCanAdd: false, shelves: null },
   items: []
-  // item: {id,category,pos,name,brand,condition,model,bodega,retirado,cantidad,real,notes}
 };
 
-// ── SESSION (resets on tab close) ──────────────────────────────────────────────
+// ── SESSION ───────────────────────────────────────────────────────────────────
 let ses = {
   role: sessionStorage.getItem('r') || 'visualizador',
   sa:   sessionStorage.getItem('sa') === '1'
 };
 
 // ── UI STATE ──────────────────────────────────────────────────────────────────
-let ui = { cat:'all', sc:'pos', sd:1 };
+let ui = { cat:'all', sc:'pos', sd:1, view:'table' };
+let currentShelf = null;
+let shelfViewMode = 'grid';
 let pendingImport = null;
-
-// ── PERSIST ───────────────────────────────────────────────────────────────────
-function save() {
-  S.lastSaved = new Date().toISOString();
-  localStorage.setItem(SK, JSON.stringify(S));
-  syncTxt();
-}
-function load() {
-  try { const r = localStorage.getItem(SK); if (r) S = {...S, ...JSON.parse(r)}; } catch(e){}
-}
-function syncTxt() {
-  document.getElementById('syncTxt').textContent = fmtDate(S.lastSaved);
-}
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,5);
-const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const n = (v,d=0) => isNaN(parseInt(v)) ? d : parseInt(v);
+const esc   = s  => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const n     = (v,d=0) => isNaN(parseInt(v)) ? d : parseInt(v);
+const ROWLABELS = 'ABCDEFGHIJ';
+
+function shelves() { return S.cfg.shelves || DEFAULT_SHELVES; }
+
+function shelfById(id) { return shelves().find(s=>s.id===id); }
+
+function rowLabels(sh) { return ROWLABELS.slice(0, sh.rows).split(''); }
+
+function cellId(shId, row, col) { return `${shId}-${row}${col}`; }
+
+function cellItems(shId, row, col) {
+  return S.items.filter(i => i.pos === cellId(shId, row, col));
+}
 
 function ef(item) {
   if (item.category === 'Herramientas') return item.cantidad || 0;
@@ -460,99 +536,122 @@ function fmtDate(s) {
   return d.toLocaleString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
+function shelfStatusColor(shId) {
+  const sh = shelfById(shId); if (!sh) return '#1e293b';
+  const rows = rowLabels(sh);
+  const all = [];
+  for (const r of rows)
+    for (let c=1; c<=sh.cols; c++)
+      all.push(...cellItems(shId, r, c));
+  if (!all.length) return '#1e293b';
+  if (all.some(i=>ef(i)===0))        return 'rgba(239,68,68,.35)';
+  if (all.some(i=>(i.retirado||0)>0)) return 'rgba(245,158,11,.3)';
+  return 'rgba(34,197,94,.28)';
+}
+
+// ── PERSIST ───────────────────────────────────────────────────────────────────
+function save() {
+  S.lastSaved = new Date().toISOString();
+  localStorage.setItem(SK, JSON.stringify(S));
+  syncTxt();
+}
+function load() {
+  try { const r = localStorage.getItem(SK); if (r) { const p=JSON.parse(r); S={...S,...p}; if(p.cfg) S.cfg={...S.cfg,...p.cfg}; } } catch(e){}
+}
+function syncTxt() { document.getElementById('syncTxt').textContent = fmtDate(S.lastSaved); }
+
 // ── ROLE ──────────────────────────────────────────────────────────────────────
 function setRole(r) {
-  ses.role = r;
-  sessionStorage.setItem('r', r);
-  document.querySelectorAll('.role-btn').forEach(b => b.classList.toggle('active', b.dataset.role === r));
+  ses.role = r; sessionStorage.setItem('r', r);
+  document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role===r));
   renderHeader(); renderTable();
 }
 
 function doLogin() {
   const v = document.getElementById('loginPwd').value;
   if (btoa(v) === S.cfg.pwdHash) {
-    ses.sa = true; sessionStorage.setItem('sa','1');
-    document.getElementById('loginErr').style.display = 'none';
-    document.getElementById('loginPwd').value = '';
+    ses.sa=true; sessionStorage.setItem('sa','1');
+    document.getElementById('loginErr').style.display='none';
+    document.getElementById('loginPwd').value='';
     closeOv('ovLogin'); render();
   } else {
-    document.getElementById('loginErr').style.display = 'block';
+    document.getElementById('loginErr').style.display='block';
     document.getElementById('loginPwd').select();
   }
 }
 
 function logout() {
-  ses.sa = false; sessionStorage.removeItem('sa');
+  ses.sa=false; sessionStorage.removeItem('sa');
   closeOv('ovConfig'); render();
 }
 
-// ── CATEGORY ─────────────────────────────────────────────────────────────────
-function setCat(c) {
-  ui.cat = c;
-  document.querySelectorAll('.cat-tab').forEach(b => b.classList.toggle('active', b.dataset.cat === c));
-  applyFilters();
+// ── VIEWS ─────────────────────────────────────────────────────────────────────
+function setView(v) {
+  ui.view = v;
+  document.getElementById('viewTable').classList.toggle('hidden', v!=='table');
+  document.getElementById('viewMap').classList.toggle('hidden',   v!=='map');
+  document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+  if (v==='map') renderFloorPlan();
 }
 
-// ── FILTERS ───────────────────────────────────────────────────────────────────
+function setCat(c) {
+  ui.cat=c;
+  document.querySelectorAll('.cat-tab').forEach(b=>b.classList.toggle('active',b.dataset.cat===c));
+  applyFilters();
+  if (ui.view==='map') renderFloorPlan();
+}
+
+// ── FILTERS / SORT ────────────────────────────────────────────────────────────
 function applyFilters() { renderTable(); }
 
 function filtered() {
-  const q   = (document.getElementById('searchInput').value||'').toLowerCase();
-  const fp  = document.getElementById('fPos').value;
-  const fe  = document.getElementById('fEstado').value;
-  const fm  = document.getElementById('fMarca').value;
-
+  const q  = (document.getElementById('searchInput').value||'').toLowerCase();
+  const fp = document.getElementById('fPos').value;
+  const fe = document.getElementById('fEstado').value;
+  const fm = document.getElementById('fMarca').value;
   return S.items.filter(i => {
-    if (ui.cat !== 'all' && i.category !== ui.cat) return false;
-    if (fp && i.pos !== fp) return false;
-    if (fe && (i.condition||'').toLowerCase() !== fe.toLowerCase()) return false;
-    if (fm && (i.brand||'').toLowerCase() !== fm.toLowerCase()) return false;
-    if (q) {
-      const hay = [i.name,i.brand,i.pos,i.condition,i.model,i.notes].join(' ').toLowerCase();
-      if (!hay.includes(q)) return false;
-    }
+    if (ui.cat!=='all' && i.category!==ui.cat) return false;
+    if (fp && i.pos!==fp) return false;
+    if (fe && (i.condition||'').toLowerCase()!==fe.toLowerCase()) return false;
+    if (fm && (i.brand||'').toLowerCase()!==fm.toLowerCase()) return false;
+    if (q) { const hay=[i.name,i.brand,i.pos,i.condition,i.model,i.notes].join(' ').toLowerCase(); if(!hay.includes(q)) return false; }
     return true;
-  }).sort((a,b) => {
-    let av = ui.sc === 'ef' ? ef(a) : (a[ui.sc]??'');
-    let bv = ui.sc === 'ef' ? ef(b) : (b[ui.sc]??'');
-    if (typeof av === 'number' && typeof bv === 'number') return (av-bv)*ui.sd;
+  }).sort((a,b)=>{
+    let av=ui.sc==='ef'?ef(a):(a[ui.sc]??'');
+    let bv=ui.sc==='ef'?ef(b):(b[ui.sc]??'');
+    if(typeof av==='number'&&typeof bv==='number') return (av-bv)*ui.sd;
     return String(av).localeCompare(String(bv))*ui.sd;
   });
 }
 
-function sortBy(col) {
-  ui.sd = ui.sc === col ? -ui.sd : 1;
-  ui.sc = col;
-  renderTable();
-}
+function sortBy(col) { ui.sd=ui.sc===col?-ui.sd:1; ui.sc=col; renderTable(); }
 
-// ── RENDER ────────────────────────────────────────────────────────────────────
+// ── RENDER ALL ────────────────────────────────────────────────────────────────
 function render() { renderHeader(); renderStats(); renderFilters(); renderTable(); renderDatalist(); syncTxt(); }
 
 function renderHeader() {
-  document.getElementById('saTag').classList.toggle('hidden', !ses.sa);
-  let h = '';
+  document.getElementById('saTag').classList.toggle('hidden',!ses.sa);
+  let h='';
   if (ses.sa) {
-    h = `<button class="bs bsm" onclick="openOv('ovImport')">📥 Importar</button>
-         <button class="bs bsm" onclick="doExport()">📤 Exportar</button>
-         <button class="bp bsm" onclick="openAdd()">+ Agregar</button>
-         <button class="bic bsm" onclick="openConfig()" title="Config">⚙️</button>`;
-  } else if (ses.role === 'operador' && S.cfg.opCanAdd) {
-    h = `<button class="bp bsm" onclick="openAdd()">+ Agregar</button>
-         <button class="bs bsm" onclick="doExport()">📤 Exportar</button>`;
+    h=`<button class="bs bsm" onclick="openOv('ovImport')">📥 Importar</button>
+       <button class="bs bsm" onclick="doExport()">📤 Exportar</button>
+       <button class="bp bsm" onclick="openAdd()">+ Agregar</button>
+       <button class="bic bsm" onclick="openConfig()" title="Config">⚙️</button>`;
+  } else if (ses.role==='operador' && S.cfg.opCanAdd) {
+    h=`<button class="bp bsm" onclick="openAdd()">+ Agregar</button>
+       <button class="bs bsm" onclick="doExport()">📤 Exportar</button>`;
   } else {
-    h = `<button class="bs bsm" onclick="doExport()">📤 Exportar</button>`;
+    h=`<button class="bs bsm" onclick="doExport()">📤 Exportar</button>`;
   }
-  document.getElementById('hacts').innerHTML = h;
+  document.getElementById('hacts').innerHTML=h;
 }
 
 function renderStats() {
-  const all = S.items;
-  const total = all.length;
-  const units = all.reduce((s,i)=>s+ef(i),0);
-  const sinStock = all.filter(i=>ef(i)===0).length;
-  const conRet   = all.filter(i=>(i.retirado||0)>0).length;
-  document.getElementById('statsBar').innerHTML =
+  const all=S.items, total=all.length;
+  const units=all.reduce((s,i)=>s+ef(i),0);
+  const sinStock=all.filter(i=>ef(i)===0).length;
+  const conRet=all.filter(i=>(i.retirado||0)>0).length;
+  document.getElementById('statsBar').innerHTML=
     `<div class="sc"><div class="sv">${total}</div><div class="sl">Ítems</div></div>
      <div class="sc ok"><div class="sv">${units}</div><div class="sl">Unidades</div></div>
      <div class="sc w"><div class="sv">${conRet}</div><div class="sl">Con retiros</div></div>
@@ -560,69 +659,40 @@ function renderStats() {
 }
 
 function renderFilters() {
-  const pos    = [...new Set(S.items.map(i=>i.pos).filter(Boolean))].sort();
-  const estados= [...new Set(S.items.map(i=>i.condition).filter(Boolean))].sort();
-  const marcas = [...new Set(S.items.map(i=>i.brand).filter(Boolean))].sort();
-  const cur = (id) => document.getElementById(id).value;
-  const opts = (arr,c,lbl) =>
-    `<option value="">${lbl}</option>`+arr.map(v=>`<option value="${esc(v)}"${c===v?' selected':''}>${esc(v)}</option>`).join('');
-  document.getElementById('fPos').innerHTML    = opts(pos,   cur('fPos'),   'Todas las posiciones');
-  document.getElementById('fEstado').innerHTML = opts(estados,cur('fEstado'),'Todos los estados');
-  document.getElementById('fMarca').innerHTML  = opts(marcas, cur('fMarca'), 'Todas las marcas');
+  const pos    =[...new Set(S.items.map(i=>i.pos).filter(Boolean))].sort();
+  const estados=[...new Set(S.items.map(i=>i.condition).filter(Boolean))].sort();
+  const marcas =[...new Set(S.items.map(i=>i.brand).filter(Boolean))].sort();
+  const cur=id=>document.getElementById(id).value;
+  const opts=(arr,c,lbl)=>`<option value="">${lbl}</option>`+arr.map(v=>`<option value="${esc(v)}"${c===v?' selected':''}>${esc(v)}</option>`).join('');
+  document.getElementById('fPos').innerHTML   =opts(pos,   cur('fPos'),   'Todas las posiciones');
+  document.getElementById('fEstado').innerHTML=opts(estados,cur('fEstado'),'Todos los estados');
+  document.getElementById('fMarca').innerHTML =opts(marcas, cur('fMarca'), 'Todas las marcas');
 }
 
 function renderTable() {
-  const items = filtered();
-  const sa = ses.sa, isOp = ses.role === 'operador';
-
-  const cats = [...new Set(items.map(i=>i.category))];
-  const showBR = cats.some(c=>c!=='Herramientas');
-
-  const si = (c,l) => `<th class="${ui.sc===c?'sorted':''}" onclick="sortBy('${c}')">${l}${ui.sc===c?(ui.sd===1?' ↑':' ↓'):''}</th>`;
-
-  document.getElementById('thead').innerHTML =
-    `<tr>${si('category','Cat')}${si('pos','POS')}${si('name','Artículo')}
-     ${si('brand','Marca')}${si('condition','Estado')}${si('model','Modelo')}
-     ${showBR?si('bodega','Bodega'):''}${showBR?si('retirado','Retirado'):''}
-     ${si('ef','Cantidad')}${si('real','REAL')}<th></th></tr>`;
-
-  const empty = document.getElementById('emptyState');
+  const items=filtered(); const sa=ses.sa, isOp=ses.role==='operador';
+  const cats=[...new Set(items.map(i=>i.category))];
+  const showBR=cats.some(c=>c!=='Herramientas');
+  const si=(c,l)=>`<th class="${ui.sc===c?'sorted':''}" onclick="sortBy('${c}')">${l}${ui.sc===c?(ui.sd===1?' ↑':' ↓'):''}</th>`;
+  document.getElementById('thead').innerHTML=
+    `<tr>${si('category','Cat')}${si('pos','POS')}${si('name','Artículo')}${si('brand','Marca')}${si('condition','Estado')}${si('model','Modelo')}${showBR?si('bodega','Bodega'):''}${showBR?si('retirado','Retirado'):''}${si('ef','Cantidad')}${si('real','REAL')}<th></th></tr>`;
+  const empty=document.getElementById('emptyState');
   if (!items.length) { document.getElementById('tbody').innerHTML=''; empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
-
-  document.getElementById('tbody').innerHTML = items.map(item => {
-    const efv = ef(item);
-    const ret = item.retirado||0;
-    const isH = item.category === 'Herramientas';
-
-    let acts = '';
+  document.getElementById('tbody').innerHTML=items.map(item=>{
+    const efv=ef(item), ret=item.retirado||0, isH=item.category==='Herramientas';
+    let acts='';
     if (sa) {
-      acts = `<div class="ra">
-        <button class="bic bsm" title="Editar" onclick="openEdit('${item.id}')">✎</button>
-        <button class="bic bsm" style="color:var(--dan)" title="Eliminar" onclick="delItem('${item.id}')">✕</button>
-      </div>`;
+      acts=`<div class="ra"><button class="bic bsm" onclick="openEdit('${item.id}')">✎</button><button class="bic bsm" style="color:var(--dan)" onclick="delItem('${item.id}')">✕</button></div>`;
     } else if (isOp) {
-      if (isH) {
-        acts = `<div class="qc">
-          <button class="bic bsm" onclick="adjH('${item.id}',-1)">−</button>
-          <span class="qv">${efv}</span>
-          <button class="bic bsm" onclick="adjH('${item.id}',1)">+</button>
-        </div>`;
-      } else {
-        acts = `<div class="ra" style="opacity:1">
-          <button class="bs bsm" onclick="openMov('${item.id}','entrada')">↑ Entrada</button>
-          <button class="bs bsm" style="color:var(--warn);border-color:var(--warn)" onclick="openMov('${item.id}','salida')">↓ Salida</button>
-        </div>`;
-      }
+      acts=isH
+        ?`<div class="qc"><button class="bic bsm" onclick="adjH('${item.id}',-1)">−</button><span class="qv">${efv}</span><button class="bic bsm" onclick="adjH('${item.id}',1)">+</button></div>`
+        :`<div class="ra" style="opacity:1"><button class="bs bsm" onclick="openMov('${item.id}','entrada')">↑ Entrada</button><button class="bs bsm" style="color:var(--warn);border-color:var(--warn)" onclick="openMov('${item.id}','salida')">↓ Salida</button></div>`;
     }
-
     return `<tr>
       <td><span class="cat-dot">${esc(item.category||'')}</span></td>
       <td><span class="pos-chip">${esc(item.pos||'—')}</span></td>
-      <td>
-        <div style="font-weight:600">${esc(item.name)}</div>
-        ${item.notes?`<div style="font-size:.7rem;color:var(--mu)">${esc(item.notes)}</div>`:''}
-      </td>
+      <td><div style="font-weight:600">${esc(item.name)}</div>${item.notes?`<div style="font-size:.7rem;color:var(--mu)">${esc(item.notes)}</div>`:''}</td>
       <td style="color:var(--mu)">${esc(item.brand||'')}</td>
       <td>${condBadge(item.condition)}</td>
       <td style="color:var(--mu)">${esc(item.model||'')}</td>
@@ -636,324 +706,533 @@ function renderTable() {
 }
 
 function renderDatalist() {
-  const pos = [...new Set(S.items.map(i=>i.pos).filter(Boolean))].sort();
-  document.getElementById('posList').innerHTML = pos.map(p=>`<option value="${esc(p)}">`).join('');
+  const sh=shelves();
+  const cellPOS=[];
+  for(const s of sh) { const rows=rowLabels(s); for(const r of rows) for(let c=1;c<=s.cols;c++) cellPOS.push(cellId(s.id,r,c)); }
+  const extra=[...new Set(S.items.map(i=>i.pos).filter(p=>p&&!cellPOS.includes(p)))].sort();
+  document.getElementById('posList').innerHTML=[...cellPOS,...extra].map(p=>`<option value="${esc(p)}">`).join('');
 }
+
+// ── FLOOR PLAN ────────────────────────────────────────────────────────────────
+// Physical layout (left→right): PC | E3C | E3B | PB | E2B | E2A | PA | E1 | wall
+// SVG viewBox: 860 × 400
+const FP_LAYOUT = [
+  { type:'aisle', label:'PASILLO C',  x:10,  w:125 },
+  { type:'shelf', id:'E3C',           x:135, w:62  },
+  { type:'shelf', id:'E3B',           x:197, w:62  },
+  { type:'aisle', label:'PASILLO B',  x:259, w:130 },
+  { type:'shelf', id:'E2B',           x:389, w:62  },
+  { type:'shelf', id:'E2A',           x:451, w:62  },
+  { type:'aisle', label:'PASILLO A',  x:513, w:125 },
+  { type:'shelf', id:'E1',            x:638, w:62  },
+  // right wall margin to 790
+];
+const FP_TOP=12, FP_BOT=335, FP_SH=FP_BOT-FP_TOP;
+
+function renderFloorPlan() {
+  const svg=document.getElementById('fpSVG');
+  let html='';
+
+  // Floor
+  html+=`<rect x="0" y="0" width="860" height="400" fill="#0b1221"/>`;
+  // Warehouse outer wall
+  html+=`<rect x="8" y="8" width="792" height="392" fill="#1e293b" stroke="#334155" stroke-width="2" rx="5"/>`;
+  // Pasillo principal
+  html+=`<rect x="8" y="${FP_BOT}" width="792" height="${400-FP_BOT-2}" fill="#273449" stroke="#334155" stroke-width="1" rx="0"/>`;
+  html+=`<text x="404" y="${FP_BOT+(400-FP_BOT)/2+5}" text-anchor="middle" fill="#475569" font-size="12" font-weight="700" font-family="'Segoe UI',sans-serif">PASILLO PRINCIPAL</text>`;
+  // Entrance
+  html+=`<rect x="0" y="${FP_BOT-44}" width="11" height="44" fill="#3b82f6" rx="2"/>`;
+  html+=`<text x="18" y="${400-8}" fill="#3b82f6" font-size="10" font-weight="700" font-family="'Segoe UI',sans-serif">ENTRADA</text>`;
+
+  for (const item of FP_LAYOUT) {
+    const cx = item.x + item.w/2;
+    const cy = FP_TOP + FP_SH/2;
+    if (item.type==='aisle') {
+      html+=`<text x="${cx}" y="${cy+4}" text-anchor="middle" fill="#3d5068" font-size="11" font-weight="700"
+                   font-family="'Segoe UI',sans-serif"
+                   transform="rotate(-90,${cx},${cy})">${item.label}</text>`;
+    } else {
+      const color = shelfStatusColor(item.id);
+      const sh = shelfById(item.id);
+      const label = sh?.label || item.id;
+      const isSelected = currentShelf === item.id;
+      html+=`<rect x="${item.x}" y="${FP_TOP}" width="${item.w}" height="${FP_SH}"
+                   fill="${color}" stroke="${isSelected?'#3b82f6':'#334155'}"
+                   stroke-width="${isSelected?2.5:1.5}" rx="3"
+                   style="cursor:pointer" onclick="selectShelf('${item.id}')"
+                   onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'"/>`;
+      html+=`<text x="${cx}" y="${cy+4}" text-anchor="middle" fill="#f1f5f9"
+                   font-size="10" font-weight="700" font-family="'Segoe UI',sans-serif"
+                   transform="rotate(-90,${cx},${cy})" style="pointer-events:none">${esc(label)}</text>`;
+      // item count badge
+      const sh2=shelfById(item.id);
+      if (sh2) {
+        let cnt=0;
+        for(const r of rowLabels(sh2)) for(let c=1;c<=sh2.cols;c++) cnt+=cellItems(item.id,r,c).length;
+        if(cnt>0) {
+          html+=`<rect x="${item.x+item.w/2-11}" y="${FP_BOT-22}" width="22" height="16"
+                       fill="#334155" rx="3" style="pointer-events:none"/>`;
+          html+=`<text x="${cx}" y="${FP_BOT-11}" text-anchor="middle" fill="${color==='#1e293b'?'#64748b':'#f1f5f9'}"
+                       font-size="9" font-weight="700" font-family="'Segoe UI',sans-serif"
+                       style="pointer-events:none">${cnt}</text>`;
+        }
+      }
+    }
+  }
+
+  // Legend
+  const lx=710, ly=20;
+  html+=`<text x="${lx}" y="${ly+10}" fill="#475569" font-size="9" font-family="'Segoe UI',sans-serif" font-weight="600">SIN ÍTEMS</text>`;
+  html+=`<rect x="${lx-14}" y="${ly+1}" width="12" height="12" fill="#1e293b" stroke="#334155" rx="2"/>`;
+  html+=`<rect x="${lx-14}" y="${ly+18}" width="12" height="12" fill="rgba(34,197,94,.28)" stroke="#334155" rx="2"/>`;
+  html+=`<text x="${lx}" y="${ly+27}" fill="#475569" font-size="9" font-family="'Segoe UI',sans-serif" font-weight="600">OK</text>`;
+  html+=`<rect x="${lx-14}" y="${ly+35}" width="12" height="12" fill="rgba(245,158,11,.3)" stroke="#334155" rx="2"/>`;
+  html+=`<text x="${lx}" y="${ly+44}" fill="#475569" font-size="9" font-family="'Segoe UI',sans-serif" font-weight="600">RETIROS</text>`;
+  html+=`<rect x="${lx-14}" y="${ly+52}" width="12" height="12" fill="rgba(239,68,68,.35)" stroke="#334155" rx="2"/>`;
+  html+=`<text x="${lx}" y="${ly+61}" fill="#475569" font-size="9" font-family="'Segoe UI',sans-serif" font-weight="600">SIN STOCK</text>`;
+
+  svg.innerHTML=html;
+}
+
+// ── SHELF SELECTION ───────────────────────────────────────────────────────────
+function selectShelf(id) {
+  currentShelf=id;
+  const sh=shelfById(id); if (!sh) return;
+  document.getElementById('sdPanel').classList.remove('hidden');
+  document.getElementById('sdTitle').textContent=sh.label||id;
+
+  let cnt=0;
+  for(const r of rowLabels(sh)) for(let c=1;c<=sh.cols;c++) cnt+=cellItems(id,r,c).length;
+  document.getElementById('sdSub').textContent=`${sh.rows} filas × ${sh.cols} columnas · ${cnt} ítem(s)`;
+
+  setSV(shelfViewMode);
+  renderFloorPlan(); // re-render to show selection highlight
+}
+
+function setSV(mode) {
+  shelfViewMode=mode;
+  document.getElementById('sdGrid').classList.toggle('hidden',mode!=='grid');
+  document.getElementById('sdIso').classList.toggle('hidden', mode!=='iso');
+  document.querySelectorAll('.sv-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  if (!currentShelf) return;
+  if (mode==='grid') renderShelfGrid(currentShelf);
+  else               renderShelfIso(currentShelf);
+}
+
+// ── SHELF GRID VIEW ───────────────────────────────────────────────────────────
+function renderShelfGrid(shId) {
+  const sh=shelfById(shId); if (!sh) return;
+  const rows=rowLabels(sh);
+  const sa=ses.sa, isOp=ses.role==='operador';
+
+  let html=`<div class="sgrid" style="grid-template-columns:28px repeat(${sh.cols},1fr);gap:4px">`;
+  // col headers
+  html+='<div></div>';
+  for(let c=1;c<=sh.cols;c++) html+=`<div class="sgcell sh">${c}</div>`;
+
+  for(const row of rows) {
+    html+=`<div class="sgcell sh">${row}</div>`;
+    for(let c=1;c<=sh.cols;c++) {
+      const cid=cellId(shId,row,c);
+      const items=cellItems(shId,row,c);
+      const hasOut=items.some(i=>ef(i)===0);
+      const hasRet=items.some(i=>(i.retirado||0)>0);
+      let cls=items.length?hasOut?'cell-out':hasRet?'cell-low':'cell-ok':'';
+
+      const names=items.slice(0,2).map(i=>esc(i.name)).join(', ')+(items.length>2?`…`:'');
+      const total=items.reduce((s,i)=>s+ef(i),0);
+
+      let addBtn='';
+      if ((sa||(isOp&&S.cfg.opCanAdd)) && items.length===0) {
+        addBtn=`<div style="font-size:.7rem;color:var(--mu);margin-top:3px">vacío</div>`;
+      }
+
+      html+=`<div class="sgcell ${cls}" onclick="clickCell('${cid}')">
+        <div class="cid">${row}${c}</div>
+        ${items.length>0?`<div class="cnt">${total}</div><div class="cnames">${names}</div>`:addBtn}
+      </div>`;
+    }
+  }
+  html+='</div>';
+
+  if (sa||isOp) {
+    html+=`<div style="margin-top:10px;font-size:.72rem;color:var(--mu)">
+      Haz clic en una celda para filtrar la lista o agregar ítems. POS de esta celda: <strong style="color:var(--ac)">${shId}-A1…</strong>
+    </div>`;
+  }
+  document.getElementById('sdGrid').innerHTML=html;
+}
+
+// ── SHELF ISOMETRIC VIEW ──────────────────────────────────────────────────────
+function renderShelfIso(shId) {
+  const sh=shelfById(shId); if (!sh) return;
+  const rows=rowLabels(sh);
+
+  const CW=66, CH=58;      // cell width / height
+  const DX=30, DY=15;      // iso depth offset
+  const MARGIN_L=38, MARGIN_T=DY+16, MARGIN_B=18, MARGIN_R=DX+10;
+
+  const W=sh.cols*CW, H=sh.rows*CH;
+  const svgW=MARGIN_L+W+MARGIN_R, svgH=MARGIN_T+H+MARGIN_B;
+
+  const OX=MARGIN_L, OY=MARGIN_T; // front-face top-left corner
+
+  let paths='', labels='';
+
+  // Right face (side)
+  paths+=`<path d="M${OX+W},${OY} L${OX+W+DX},${OY-DY} L${OX+W+DX},${OY+H-DY} L${OX+W},${OY+H} Z"
+                fill="#111827" stroke="#334155" stroke-width="1.5"/>`;
+  // Top face
+  paths+=`<path d="M${OX},${OY} L${OX+DX},${OY-DY} L${OX+W+DX},${OY-DY} L${OX+W},${OY} Z"
+                fill="#273449" stroke="#334155" stroke-width="1.5"/>`;
+
+  // Col labels on top-face slant
+  for(let c=0;c<sh.cols;c++) {
+    const tx=OX+c*CW+CW/2;
+    labels+=`<text x="${tx}" y="${OY-4}" text-anchor="middle" fill="#475569" font-size="10" font-weight="600">${c+1}</text>`;
+  }
+
+  // Front face cells
+  for(let r=0;r<sh.rows;r++) {
+    const row=rows[r];
+    // Row label
+    labels+=`<text x="${OX-6}" y="${OY+r*CH+CH/2+4}" text-anchor="end" fill="#64748b" font-size="12" font-weight="700">${row}</text>`;
+
+    for(let c=0;c<sh.cols;c++) {
+      const cid=cellId(shId,row,c+1);
+      const items=cellItems(shId,row,c+1);
+      const efv=items.reduce((s,i)=>s+ef(i),0);
+      const hasOut=items.length>0&&items.every(i=>ef(i)===0);
+      const hasRet=items.some(i=>(i.retirado||0)>0);
+
+      let fill='#162032', stroke='#253347', textColor='#253347';
+      if(items.length>0) {
+        if(hasOut)      { fill='#450a0a'; stroke='#ef4444'; textColor='rgba(255,255,255,.6)'; }
+        else if(hasRet) { fill='#431407'; stroke='#f59e0b'; textColor='rgba(255,255,255,.7)'; }
+        else            { fill='#052e16'; stroke='#22c55e'; textColor='rgba(255,255,255,.8)'; }
+      }
+
+      const x=OX+c*CW+1, y=OY+r*CH+1;
+      paths+=`<rect x="${x}" y="${y}" width="${CW-2}" height="${CH-2}"
+                    fill="${fill}" stroke="${stroke}" stroke-width="1.5" rx="3"
+                    onclick="clickCell('${cid}')" style="cursor:pointer"/>`;
+      // cell label
+      paths+=`<text x="${x+CW/2}" y="${y+CH/2-(items.length?6:2)}" text-anchor="middle"
+                    fill="${textColor}" font-size="11" font-weight="700" style="pointer-events:none">${row}${c+1}</text>`;
+      if(items.length>0) {
+        paths+=`<text x="${x+CW/2}" y="${y+CH/2+9}" text-anchor="middle"
+                      fill="${textColor}" font-size="9" style="pointer-events:none">${efv} u · ${items.length}it</text>`;
+      }
+    }
+  }
+
+  // Frame border over cells
+  paths+=`<rect x="${OX}" y="${OY}" width="${W}" height="${H}" fill="none" stroke="#334155" stroke-width="2"/>`;
+
+  document.getElementById('sdIso').innerHTML=
+    `<svg viewBox="0 0 ${svgW} ${svgH}" width="100%" style="max-height:360px;overflow:visible" xmlns="http://www.w3.org/2000/svg">
+      <rect width="${svgW}" height="${svgH}" fill="transparent"/>
+      ${paths}${labels}
+    </svg>`;
+}
+
+// ── CELL CLICK ────────────────────────────────────────────────────────────────
+function clickCell(cid) {
+  setView('table');
+  // Pre-fill POS filter
+  document.getElementById('fPos').value=cid;
+  applyFilters();
+  // If SA or permitted operator, pre-fill POS in add form
+  if ((ses.sa||(ses.role==='operador'&&S.cfg.opCanAdd)) && cellItems2(cid).length===0) {
+    openAdd();
+    document.getElementById('iPos').value=cid;
+  }
+}
+
+function cellItems2(cid) { return S.items.filter(i=>i.pos===cid); }
 
 // ── MODALS ────────────────────────────────────────────────────────────────────
 function openOv(id)  { document.getElementById(id).classList.add('open'); }
 function closeOv(id) { document.getElementById(id).classList.remove('open'); }
 
 // Secret: 5 clicks on version badge
-let sc=0, st=null;
-document.getElementById('vbadge').addEventListener('click', ()=>{
-  if (ses.sa) return;
+let sc=0,st=null;
+document.getElementById('vbadge').addEventListener('click',()=>{
+  if(ses.sa) return;
   sc++; clearTimeout(st);
-  st = setTimeout(()=>sc=0, 3000);
-  if (sc>=5) {
-    sc=0;
-    document.getElementById('loginPwd').value='';
-    document.getElementById('loginErr').style.display='none';
-    openOv('ovLogin');
-    setTimeout(()=>document.getElementById('loginPwd').focus(),80);
-  }
+  st=setTimeout(()=>sc=0,3000);
+  if(sc>=5){sc=0;document.getElementById('loginPwd').value='';document.getElementById('loginErr').style.display='none';openOv('ovLogin');setTimeout(()=>document.getElementById('loginPwd').focus(),80);}
 });
 
-document.addEventListener('keydown', e => {
-  if (e.key==='Escape')
-    ['ovLogin','ovItem','ovMov','ovImport','ovConfig'].forEach(closeOv);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')['ovLogin','ovItem','ovMov','ovImport','ovConfig'].forEach(closeOv);
 });
 ['ovLogin','ovItem','ovMov','ovImport','ovConfig'].forEach(id=>{
-  document.getElementById(id).addEventListener('click', e=>{
-    if (e.target===document.getElementById(id)) closeOv(id);
-  });
+  document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))closeOv(id);});
 });
 
 // ── ITEM CRUD ─────────────────────────────────────────────────────────────────
-function openAdd() {
-  document.getElementById('itemTitle').textContent = 'Agregar ítem';
-  document.getElementById('itemId').value = '';
-  document.getElementById('iCat').value = ui.cat !== 'all' ? ui.cat : 'Repuestos';
-  ['iPos','iName','iBrand','iCond','iModel','iNotes'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('iBodega').value = '0';
-  document.getElementById('iRetirado').value = '0';
-  document.getElementById('iCantidad').value = '0';
-  document.getElementById('iReal').value = '';
-  updateItemFields();
-  openOv('ovItem');
+function openAdd(prefillPos) {
+  document.getElementById('itemTitle').textContent='Agregar ítem';
+  document.getElementById('itemId').value='';
+  document.getElementById('iCat').value=ui.cat!=='all'?ui.cat:'Repuestos';
+  ['iName','iBrand','iCond','iModel','iNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('iPos').value=prefillPos||'';
+  document.getElementById('iBodega').value='0';
+  document.getElementById('iRetirado').value='0';
+  document.getElementById('iCantidad').value='0';
+  document.getElementById('iReal').value='';
+  updateItemFields(); openOv('ovItem');
   setTimeout(()=>document.getElementById('iName').focus(),60);
 }
 
 function openEdit(id) {
-  const it = S.items.find(i=>i.id===id); if (!it) return;
-  document.getElementById('itemTitle').textContent = 'Editar ítem';
-  document.getElementById('itemId').value    = id;
-  document.getElementById('iCat').value      = it.category||'Repuestos';
-  document.getElementById('iPos').value      = it.pos||'';
-  document.getElementById('iName').value     = it.name||'';
-  document.getElementById('iBrand').value    = it.brand||'';
-  document.getElementById('iCond').value     = it.condition||'';
-  document.getElementById('iModel').value    = it.model||'';
-  document.getElementById('iBodega').value   = it.bodega??0;
-  document.getElementById('iRetirado').value = it.retirado??0;
-  document.getElementById('iCantidad').value = it.cantidad??0;
-  document.getElementById('iReal').value     = it.real??'';
-  document.getElementById('iNotes').value    = it.notes||'';
-  updateItemFields();
-  openOv('ovItem');
+  const it=S.items.find(i=>i.id===id); if(!it) return;
+  document.getElementById('itemTitle').textContent='Editar ítem';
+  document.getElementById('itemId').value=id;
+  document.getElementById('iCat').value=it.category||'Repuestos';
+  document.getElementById('iPos').value=it.pos||'';
+  document.getElementById('iName').value=it.name||'';
+  document.getElementById('iBrand').value=it.brand||'';
+  document.getElementById('iCond').value=it.condition||'';
+  document.getElementById('iModel').value=it.model||'';
+  document.getElementById('iBodega').value=it.bodega??0;
+  document.getElementById('iRetirado').value=it.retirado??0;
+  document.getElementById('iCantidad').value=it.cantidad??0;
+  document.getElementById('iReal').value=it.real??'';
+  document.getElementById('iNotes').value=it.notes||'';
+  updateItemFields(); openOv('ovItem');
 }
 
 function updateItemFields() {
-  const h = document.getElementById('iCat').value === 'Herramientas';
-  document.getElementById('fBodega').style.display   = h ? 'none' : '';
-  document.getElementById('fRetirado').style.display = h ? 'none' : '';
-  document.getElementById('fCantidad').style.display = h ? '' : 'none';
-  document.getElementById('fReal').style.display     = h ? 'none' : '';
+  const h=document.getElementById('iCat').value==='Herramientas';
+  document.getElementById('fBodega').style.display  =h?'none':'';
+  document.getElementById('fRetirado').style.display=h?'none':'';
+  document.getElementById('fCantidad').style.display=h?'':'none';
+  document.getElementById('fReal').style.display    =h?'none':'';
 }
 
 function saveItem() {
-  const id   = document.getElementById('itemId').value;
-  const cat  = document.getElementById('iCat').value;
-  const pos  = document.getElementById('iPos').value.trim();
-  const name = document.getElementById('iName').value.trim();
-  if (!name) { alert('El nombre es obligatorio.'); return; }
-  if (!pos)  { alert('La posición (POS) es obligatoria.'); return; }
-
-  const it = {
-    id: id || genId(), category: cat, pos, name,
-    brand:     document.getElementById('iBrand').value.trim(),
-    condition: document.getElementById('iCond').value.trim(),
-    model:     document.getElementById('iModel').value.trim(),
-    bodega:    n(document.getElementById('iBodega').value),
-    retirado:  n(document.getElementById('iRetirado').value),
-    cantidad:  n(document.getElementById('iCantidad').value),
-    real:      document.getElementById('iReal').value !== '' ? n(document.getElementById('iReal').value) : null,
-    notes:     document.getElementById('iNotes').value.trim()
-  };
-
-  if (id) { const i = S.items.findIndex(x=>x.id===id); if (i!==-1) S.items[i]=it; }
+  const id=document.getElementById('itemId').value;
+  const cat=document.getElementById('iCat').value;
+  const pos=document.getElementById('iPos').value.trim();
+  const name=document.getElementById('iName').value.trim();
+  if(!name){alert('El nombre es obligatorio.');return;}
+  if(!pos){alert('La posición (POS) es obligatoria.');return;}
+  const it={id:id||genId(),category:cat,pos,name,
+    brand:document.getElementById('iBrand').value.trim(),
+    condition:document.getElementById('iCond').value.trim(),
+    model:document.getElementById('iModel').value.trim(),
+    bodega:n(document.getElementById('iBodega').value),
+    retirado:n(document.getElementById('iRetirado').value),
+    cantidad:n(document.getElementById('iCantidad').value),
+    real:document.getElementById('iReal').value!==''?n(document.getElementById('iReal').value):null,
+    notes:document.getElementById('iNotes').value.trim()};
+  if(id){const i=S.items.findIndex(x=>x.id===id);if(i!==-1)S.items[i]=it;}
   else S.items.push(it);
-
   save(); closeOv('ovItem'); render();
+  if(ui.view==='map') renderFloorPlan();
 }
 
 function delItem(id) {
-  if (!confirm('¿Eliminar este ítem?')) return;
-  S.items = S.items.filter(i=>i.id!==id);
+  if(!confirm('¿Eliminar este ítem?'))return;
+  S.items=S.items.filter(i=>i.id!==id);
   save(); render();
+  if(ui.view==='map') renderFloorPlan();
 }
 
 // ── OPERATOR MOVEMENTS ────────────────────────────────────────────────────────
-function adjH(id, delta) {
-  const it = S.items.find(i=>i.id===id); if (!it) return;
-  it.cantidad = Math.max(0, (it.cantidad||0)+delta);
+function adjH(id,delta) {
+  const it=S.items.find(i=>i.id===id); if(!it)return;
+  it.cantidad=Math.max(0,(it.cantidad||0)+delta);
   save(); renderTable(); renderStats();
 }
 
-function openMov(id, type) {
-  const it = S.items.find(i=>i.id===id); if (!it) return;
-  document.getElementById('movId').value   = id;
-  document.getElementById('movType').value = type;
-  document.getElementById('movTitle').textContent = type==='entrada' ? '📥 Entrada de stock' : '📤 Salida de stock';
-  document.getElementById('movDesc').textContent  = `${it.pos} · ${it.name} — disponible: ${ef(it)}`;
-  document.getElementById('movQty').value = '1';
+function openMov(id,type) {
+  const it=S.items.find(i=>i.id===id); if(!it)return;
+  document.getElementById('movId').value=id;
+  document.getElementById('movType').value=type;
+  document.getElementById('movTitle').textContent=type==='entrada'?'📥 Entrada de stock':'📤 Salida de stock';
+  document.getElementById('movDesc').textContent=`${it.pos} · ${it.name} — disponible: ${ef(it)}`;
+  document.getElementById('movQty').value='1';
   openOv('ovMov');
   setTimeout(()=>document.getElementById('movQty').select(),50);
 }
 
 function saveMov() {
-  const id   = document.getElementById('movId').value;
-  const type = document.getElementById('movType').value;
-  const qty  = n(document.getElementById('movQty').value,0);
-  if (qty<=0) { alert('La cantidad debe ser mayor a 0.'); return; }
-  const it = S.items.find(i=>i.id===id); if (!it) return;
-  if (type==='entrada') {
-    it.bodega = (it.bodega||0) + qty;
-  } else {
-    if (qty > ef(it)) { alert(`Stock insuficiente. Disponible: ${ef(it)}`); return; }
-    it.retirado = (it.retirado||0) + qty;
-  }
+  const id=document.getElementById('movId').value;
+  const type=document.getElementById('movType').value;
+  const qty=n(document.getElementById('movQty').value,0);
+  if(qty<=0){alert('La cantidad debe ser mayor a 0.');return;}
+  const it=S.items.find(i=>i.id===id); if(!it)return;
+  if(type==='entrada'){it.bodega=(it.bodega||0)+qty;}
+  else{if(qty>ef(it)){alert(`Stock insuficiente. Disponible: ${ef(it)}`);return;}it.retirado=(it.retirado||0)+qty;}
   save(); closeOv('ovMov'); renderTable(); renderStats();
+  if(ui.view==='map'&&currentShelf) { renderFloorPlan(); setSV(shelfViewMode); }
 }
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 function openConfig() {
-  document.getElementById('permAdd').checked = S.cfg.opCanAdd;
-  document.getElementById('pwd1').value = '';
-  document.getElementById('pwd2').value = '';
-  document.getElementById('pwdMsg').textContent = '';
+  document.getElementById('permAdd').checked=S.cfg.opCanAdd;
+  document.getElementById('pwd1').value='';
+  document.getElementById('pwd2').value='';
+  document.getElementById('pwdMsg').textContent='';
+  renderShelfCfg();
   openOv('ovConfig');
 }
 
-function savePerm() {
-  S.cfg.opCanAdd = document.getElementById('permAdd').checked;
-  save(); renderHeader();
+function savePerm() { S.cfg.opCanAdd=document.getElementById('permAdd').checked; save(); renderHeader(); }
+
+function renderShelfCfg() {
+  const sh=shelves();
+  document.getElementById('shelfCfgList').innerHTML=sh.map((s,idx)=>`
+    <div class="shelf-cfg-row">
+      <input value="${esc(s.label||s.id)}" placeholder="Etiqueta"
+             onchange="updateShelf(${idx},'label',this.value)" />
+      <input type="number" value="${s.rows}" min="1" max="10"
+             onchange="updateShelf(${idx},'rows',+this.value)" />
+      <input type="number" value="${s.cols}" min="1" max="10"
+             onchange="updateShelf(${idx},'cols',+this.value)" />
+      <span style="font-size:.7rem;color:var(--mu)">${s.id}</span>
+    </div>`).join('');
+}
+
+function updateShelf(idx,field,val) {
+  if(!S.cfg.shelves) S.cfg.shelves=JSON.parse(JSON.stringify(DEFAULT_SHELVES));
+  S.cfg.shelves[idx][field]=val;
+  save();
+  if(currentShelf) { setSV(shelfViewMode); }
+  renderFloorPlan();
 }
 
 function changePwd() {
-  const p1 = document.getElementById('pwd1').value;
-  const p2 = document.getElementById('pwd2').value;
-  const m  = document.getElementById('pwdMsg');
-  if (!p1) { m.style.color='var(--dan)'; m.textContent='Ingresa una contraseña.'; return; }
-  if (p1!==p2) { m.style.color='var(--dan)'; m.textContent='No coinciden.'; return; }
-  S.cfg.pwdHash = btoa(p1); save();
+  const p1=document.getElementById('pwd1').value;
+  const p2=document.getElementById('pwd2').value;
+  const m=document.getElementById('pwdMsg');
+  if(!p1){m.style.color='var(--dan)';m.textContent='Ingresa una contraseña.';return;}
+  if(p1!==p2){m.style.color='var(--dan)';m.textContent='No coinciden.';return;}
+  S.cfg.pwdHash=btoa(p1); save();
   document.getElementById('pwd1').value=''; document.getElementById('pwd2').value='';
   m.style.color='var(--ok)'; m.textContent='Contraseña actualizada.';
-  setTimeout(()=>m.textContent='', 3000);
+  setTimeout(()=>m.textContent='',3000);
 }
 
 function clearAll() {
-  if (!confirm('¿Borrar TODOS los ítems? No se puede deshacer.')) return;
-  S.items = []; save(); closeOv('ovConfig'); render();
+  if(!confirm('¿Borrar TODOS los ítems? No se puede deshacer.'))return;
+  S.items=[]; save(); closeOv('ovConfig'); render();
+  if(ui.view==='map') renderFloorPlan();
 }
 
 function backupJSON() {
-  const b = new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
-  const u = URL.createObjectURL(b);
-  const a = document.createElement('a');
+  const b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const u=URL.createObjectURL(b);
+  const a=document.createElement('a');
   a.href=u; a.download=`inventario_backup_${new Date().toISOString().slice(0,10)}.json`;
   a.click(); URL.revokeObjectURL(u);
 }
 
 // ── IMPORT ────────────────────────────────────────────────────────────────────
 function previewImport() {
-  const file = document.getElementById('importFile').files[0];
-  const prev = document.getElementById('iPreview');
-  const errEl = document.getElementById('iErr');
-  const btn = document.getElementById('importBtn');
+  const file=document.getElementById('importFile').files[0];
+  const prev=document.getElementById('iPreview'), errEl=document.getElementById('iErr');
+  const btn=document.getElementById('importBtn');
   prev.classList.add('hidden'); errEl.style.display='none'; btn.disabled=true; pendingImport=null;
-  if (!file) return;
-
-  if (!window.XLSX) { errEl.textContent='La librería Excel requiere conexión a internet.'; errEl.style.display='block'; return; }
-
-  const reader = new FileReader();
-  reader.onload = e => {
+  if(!file)return;
+  if(!window.XLSX){errEl.textContent='Requiere conexión para la librería Excel.';errEl.style.display='block';return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
     try {
-      const wb = XLSX.read(e.target.result, {type:'array'});
-      pendingImport = [];
-      let html = '';
-
-      for (const sn of wb.SheetNames) {
-        const ws = wb.Sheets[sn];
-        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-
-        // detect category
-        const snl = sn.toLowerCase();
-        let cat = sn;
-        if (snl.includes('repuesto')) cat='Repuestos';
-        else if (snl.includes('herramienta')) cat='Herramientas';
-        else if (snl.includes('insumo')) cat='Insumos';
-
-        // find header row
-        let hr = -1; let cm = {};
-        for (let r=0; r<Math.min(10,rows.length); r++) {
-          const row = rows[r].map(c=>String(c).toLowerCase().trim());
-          if (row.some(c=>c==='pos'||c.includes('artículo')||c.includes('articulo'))) {
-            hr = r;
-            cm = {
-              pos:      row.findIndex(c=>c==='pos'||c.includes('posic')),
-              name:     row.findIndex(c=>c.includes('artículo')||c.includes('articulo')||c==='nombre'),
-              brand:    row.findIndex(c=>c==='marca'),
-              cond:     row.findIndex(c=>c==='estado'),
-              model:    row.findIndex(c=>c==='modelo'),
-              bodega:   row.findIndex(c=>c.startsWith('bodeg')),
-              retirado: row.findIndex(c=>c.startsWith('retir')),
-              cantidad: row.findIndex(c=>c.startsWith('cantidad')),
-              real:     row.findIndex(c=>c==='real'),
-            };
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      pendingImport=[];
+      let html='';
+      for(const sn of wb.SheetNames){
+        const ws=wb.Sheets[sn];
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        const snl=sn.toLowerCase();
+        let cat=sn;
+        if(snl.includes('repuesto'))cat='Repuestos';
+        else if(snl.includes('herramienta'))cat='Herramientas';
+        else if(snl.includes('insumo'))cat='Insumos';
+        let hr=-1,cm={};
+        for(let r=0;r<Math.min(10,rows.length);r++){
+          const row=rows[r].map(c=>String(c).toLowerCase().trim());
+          if(row.some(c=>c==='pos'||c.includes('artículo')||c.includes('articulo'))){
+            hr=r;
+            cm={pos:row.findIndex(c=>c==='pos'||c.includes('posic')),
+                name:row.findIndex(c=>c.includes('artículo')||c.includes('articulo')||c==='nombre'),
+                brand:row.findIndex(c=>c==='marca'),cond:row.findIndex(c=>c==='estado'),
+                model:row.findIndex(c=>c==='modelo'),bodega:row.findIndex(c=>c.startsWith('bodeg')),
+                retirado:row.findIndex(c=>c.startsWith('retir')),cantidad:row.findIndex(c=>c.startsWith('cantidad')),
+                real:row.findIndex(c=>c==='real')};
             break;
           }
         }
-
-        if (hr===-1) { html+=`<div class="isheet"><span>${esc(sn)}</span><span style="color:var(--warn)">Sin encabezado</span></div>`; continue; }
-
-        const data = rows.slice(hr+1).filter(r=>r.some(c=>c!==''));
+        if(hr===-1){html+=`<div class="isheet"><span>${esc(sn)}</span><span style="color:var(--warn)">Sin encabezado</span></div>`;continue;}
+        const data=rows.slice(hr+1).filter(r=>r.some(c=>c!==''));
         let cnt=0;
-        for (const row of data) {
-          const g  = i => i!==-1 ? String(row[i]??'').trim() : '';
-          const gn = i => { const v=parseFloat(g(i)); return isNaN(v)?0:v; };
-          const nm = g(cm.name); if (!nm) continue;
-          const isH = cat==='Herramientas';
-          pendingImport.push({
-            id: genId(), category: cat,
-            pos:       g(cm.pos)||'—',
-            name:      nm,
-            brand:     g(cm.brand),
-            condition: g(cm.cond),
-            model:     g(cm.model),
-            bodega:    isH?0:gn(cm.bodega),
-            retirado:  isH?0:gn(cm.retirado),
-            cantidad:  isH?(gn(cm.cantidad)||gn(cm.bodega)):gn(cm.cantidad),
-            real:      g(cm.real)!==''?gn(cm.real):null,
-            notes:''
-          });
+        for(const row of data){
+          const g=i=>i!==-1?String(row[i]??'').trim():'';
+          const gn=i=>{const v=parseFloat(g(i));return isNaN(v)?0:v;};
+          const nm=g(cm.name); if(!nm)continue;
+          const isH=cat==='Herramientas';
+          pendingImport.push({id:genId(),category:cat,pos:g(cm.pos)||'—',name:nm,
+            brand:g(cm.brand),condition:g(cm.cond),model:g(cm.model),
+            bodega:isH?0:gn(cm.bodega),retirado:isH?0:gn(cm.retirado),
+            cantidad:isH?(gn(cm.cantidad)||gn(cm.bodega)):gn(cm.cantidad),
+            real:g(cm.real)!==''?gn(cm.real):null,notes:''});
           cnt++;
         }
         html+=`<div class="isheet"><span><strong>${esc(cat)}</strong> <span style="color:var(--mu);font-size:.72rem">(${esc(sn)})</span></span><span style="color:var(--ok)">${cnt} ítems</span></div>`;
       }
-
-      if (!pendingImport.length) { errEl.textContent='No se encontraron ítems válidos.'; errEl.style.display='block'; return; }
+      if(!pendingImport.length){errEl.textContent='No se encontraron ítems válidos.';errEl.style.display='block';return;}
       prev.innerHTML=html; prev.classList.remove('hidden'); btn.disabled=false;
-    } catch(err) {
-      errEl.textContent='Error al leer: '+err.message; errEl.style.display='block';
-    }
+    }catch(err){errEl.textContent='Error: '+err.message;errEl.style.display='block';}
   };
   reader.readAsArrayBuffer(file);
 }
 
 function doImport() {
-  if (!pendingImport?.length) return;
-  const mode = document.getElementById('importMode').value;
-  if (mode==='replace') {
-    S.items = pendingImport;
-  } else {
-    const ex = new Set(S.items.map(i=>`${i.pos}||${i.name}`.toLowerCase()));
-    S.items.push(...pendingImport.filter(i=>!ex.has(`${i.pos}||${i.name}`.toLowerCase())));
-  }
+  if(!pendingImport?.length)return;
+  const mode=document.getElementById('importMode').value;
+  if(mode==='replace'){S.items=pendingImport;}
+  else{const ex=new Set(S.items.map(i=>`${i.pos}||${i.name}`.toLowerCase()));S.items.push(...pendingImport.filter(i=>!ex.has(`${i.pos}||${i.name}`.toLowerCase())));}
   save(); closeOv('ovImport');
   document.getElementById('importFile').value='';
   document.getElementById('iPreview').classList.add('hidden');
   document.getElementById('importBtn').disabled=true;
   pendingImport=null; render();
+  if(ui.view==='map') renderFloorPlan();
 }
 
 // ── EXPORT ────────────────────────────────────────────────────────────────────
 function doExport() {
-  if (!window.XLSX) { alert('Exportación requiere conexión a internet para cargar la librería Excel.'); return; }
-  const wb = XLSX.utils.book_new();
-  for (const cat of ['Repuestos','Herramientas','Insumos']) {
-    const items = S.items.filter(i=>i.category===cat);
-    if (!items.length) continue;
-    const isH = cat==='Herramientas';
-    const rows = [[],[],[`Inventario ${cat}`],[],
-      isH ? ['POS','Artículo','Marca','Estado','Modelo','Cantidad']
-           : ['POS','Artículo','Marca','Estado','Modelo','Bodega','Retirado','Cantidad','REAL']
-    ];
-    for (const it of items) {
-      rows.push(isH
-        ? [it.pos,it.name,it.brand,it.condition,it.model,it.cantidad||0]
-        : [it.pos,it.name,it.brand,it.condition,it.model,it.bodega||0,it.retirado||0,ef(it),it.real??'']
-      );
-    }
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols'] = isH ? [{wch:16},{wch:42},{wch:14},{wch:13},{wch:14},{wch:10}]
-                      : [{wch:16},{wch:42},{wch:14},{wch:13},{wch:14},{wch:10},{wch:10},{wch:10},{wch:8}];
-    XLSX.utils.book_append_sheet(wb, ws, cat);
+  if(!window.XLSX){alert('Exportación requiere conexión.');return;}
+  const wb=XLSX.utils.book_new();
+  for(const cat of['Repuestos','Herramientas','Insumos']){
+    const items=S.items.filter(i=>i.category===cat); if(!items.length)continue;
+    const isH=cat==='Herramientas';
+    const rows=[[],[],[`Inventario ${cat}`],[],
+      isH?['POS','Artículo','Marca','Estado','Modelo','Cantidad']
+         :['POS','Artículo','Marca','Estado','Modelo','Bodega','Retirado','Cantidad','REAL']];
+    for(const it of items)
+      rows.push(isH?[it.pos,it.name,it.brand,it.condition,it.model,it.cantidad||0]
+                   :[it.pos,it.name,it.brand,it.condition,it.model,it.bodega||0,it.retirado||0,ef(it),it.real??'']);
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=isH?[{wch:16},{wch:42},{wch:14},{wch:13},{wch:14},{wch:10}]
+                   :[{wch:16},{wch:42},{wch:14},{wch:13},{wch:14},{wch:10},{wch:10},{wch:10},{wch:8}];
+    XLSX.utils.book_append_sheet(wb,ws,cat);
   }
-  XLSX.writeFile(wb, `inventario_${new Date().toISOString().slice(0,10)}.xlsx`);
+  XLSX.writeFile(wb,`inventario_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 // ── OFFLINE ───────────────────────────────────────────────────────────────────
-function chkOnline() {
-  document.getElementById('offlineBanner').classList.toggle('hidden', navigator.onLine);
-  syncTxt();
-}
-window.addEventListener('online',  chkOnline);
-window.addEventListener('offline', chkOnline);
+function chkOnline(){document.getElementById('offlineBanner').classList.toggle('hidden',navigator.onLine);syncTxt();}
+window.addEventListener('online',chkOnline);
+window.addEventListener('offline',chkOnline);
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 load();
-document.querySelectorAll('.role-btn').forEach(b => b.classList.toggle('active', b.dataset.role===ses.role));
+document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role===ses.role));
 chkOnline(); render();
 </script>
 </body>
