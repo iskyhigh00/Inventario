@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventario de Bodega</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface2: #273449;
+      --border: #334155;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #22c55e;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --radius: 8px;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .search-bar {
+      flex: 1;
+      min-width: 220px;
+      position: relative;
+    }
+
+    .search-bar input {
+      width: 100%;
+      padding: 8px 12px 8px 36px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-bar input:focus { border-color: var(--accent); }
+
+    .search-bar svg {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+
+    .header-actions { display: flex; gap: 8px; }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 8px 14px;
+      transition: background 0.2s, transform 0.1s;
+    }
+    button:active { transform: scale(0.97); }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--border); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-sm { padding: 4px 10px; font-size: 0.78rem; }
+    .btn-icon { padding: 6px; background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+    .btn-icon:hover { color: var(--text); background: var(--surface2); }
+
+    /* MAIN LAYOUT */
+    .main { display: flex; height: calc(100vh - 57px); }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 260px;
+      min-width: 220px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-section {
+      padding: 12px 16px 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab-nav {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 0;
+      border: none;
+      border-bottom: 2px solid transparent;
+      font-size: 0.8rem;
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .tab-btn:hover { background: var(--surface2); }
+
+    .sidebar-body { flex: 1; overflow-y: auto; padding: 12px; }
+
+    /* CONFIG PANEL */
+    .config-grid { display: flex; flex-direction: column; gap: 10px; }
+
+    .config-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .config-label { font-size: 0.82rem; color: var(--text-muted); }
+
+    .config-row input[type="number"],
+    .config-row input[type="text"],
+    select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 5px 8px;
+      font-size: 0.82rem;
+      width: 70px;
+      outline: none;
+    }
+    .config-row input:focus, select:focus { border-color: var(--accent); }
+
+    .letters-input { width: 110px !important; }
+
+    /* SEARCH RESULTS */
+    .search-results { display: flex; flex-direction: column; gap: 6px; }
+
+    .result-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .result-card:hover { border-color: var(--accent); }
+    .result-card.active { border-color: var(--accent); background: var(--surface2); }
+
+    .result-card .rc-name { font-size: 0.88rem; font-weight: 600; }
+    .result-card .rc-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+    .result-card .rc-loc {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .empty-msg {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    /* CONTENT AREA */
+    .content { flex: 1; overflow: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* GRID */
+    .grid-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .warehouse-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .grid-cell {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px;
+      min-height: 70px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      position: relative;
+    }
+
+    .grid-cell:hover { border-color: var(--accent); }
+    .grid-cell.selected { border-color: var(--accent); background: var(--surface2); }
+    .grid-cell.highlight { border-color: var(--warning); box-shadow: 0 0 0 2px rgba(245,158,11,0.3); }
+    .grid-cell.low-stock { border-color: var(--warning); }
+    .grid-cell.empty-cell { border-style: dashed; opacity: 0.5; }
+
+    .cell-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+
+    .cell-items { margin-top: 4px; display: flex; flex-direction: column; gap: 2px; }
+
+    .cell-item {
+      font-size: 0.75rem;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cell-item .qty {
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .cell-item.low { color: var(--warning); }
+    .cell-item.out { color: var(--danger); }
+
+    .cell-more {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* DETAIL PANEL */
+    .detail-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+
+    .detail-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .detail-title { font-size: 1rem; font-weight: 700; }
+    .detail-subtitle { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* ITEMS TABLE */
+    .items-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+
+    .items-table th {
+      text-align: left;
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .items-table td {
+      padding: 8px 10px;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .items-table tr:last-child td { border-bottom: none; }
+    .items-table tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .badge-ok { background: rgba(34,197,94,0.15); color: var(--success); }
+    .badge-low { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .badge-out { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+    /* INLINE FORM */
+    .add-item-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      align-items: flex-end;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 0.72rem; color: var(--text-muted); }
+
+    .form-group input, .form-group select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 6px 10px;
+      font-size: 0.85rem;
+      outline: none;
+      width: auto;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+
+    .input-name { width: 180px; }
+    .input-qty  { width: 70px; }
+    .input-min  { width: 70px; }
+    .input-unit { width: 80px; }
+
+    /* SUMMARY BAR */
+    .summary-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .stat-card .stat-value { font-size: 1.5rem; font-weight: 800; }
+    .stat-card .stat-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+    .stat-card.danger .stat-value { color: var(--danger); }
+    .stat-card.warning .stat-value { color: var(--warning); }
+    .stat-card.ok .stat-value { color: var(--success); }
+
+    /* LOW STOCK ALERTS */
+    .alerts-list { display: flex; flex-direction: column; gap: 6px; }
+
+    .alert-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--warning);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      font-size: 0.82rem;
+    }
+
+    .alert-item.out { border-left-color: var(--danger); }
+
+    .alert-item .al-loc {
+      background: var(--surface2);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-weight: 700;
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+
+    .alert-item .al-name { flex: 1; }
+    .alert-item .al-qty { color: var(--warning); font-weight: 700; }
+    .alert-item.out .al-qty { color: var(--danger); }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      width: 380px;
+      max-width: 95vw;
+    }
+
+    .modal h2 { font-size: 1rem; margin-bottom: 16px; }
+
+    .modal-form { display: flex; flex-direction: column; gap: 12px; }
+
+    .modal-form input, .modal-form select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 0.88rem;
+      outline: none;
+    }
+    .modal-form input:focus, .modal-form select:focus { border-color: var(--accent); }
+
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+
+    /* SCROLLBARS */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* RESPONSIVE */
+    @media (max-width: 640px) {
+      .main { flex-direction: column; height: auto; }
+      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); max-height: 280px; }
+      .input-name { width: 140px; }
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <h1>📦 Bodega</h1>
+
+  <div class="search-bar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input type="text" id="globalSearch" placeholder="Buscar repuesto o material…" autocomplete="off" />
+  </div>
+
+  <div class="header-actions">
+    <button class="btn-secondary" onclick="showView('grid')">🗺 Vista Bodega</button>
+    <button class="btn-secondary" onclick="showView('alerts')">⚠️ Alertas</button>
+    <button class="btn-primary" onclick="exportData()">↓ Exportar</button>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="tab-nav">
+      <button class="tab-btn active" id="tab-config" onclick="switchTab('config')">Config</button>
+      <button class="tab-btn" id="tab-search" onclick="switchTab('search')">Búsqueda</button>
+    </div>
+
+    <div class="sidebar-body" id="panel-config">
+      <div class="config-grid">
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:4px;">Definir espacios de bodega</div>
+
+        <div class="config-row">
+          <span class="config-label">Filas (letras)</span>
+          <input type="text" id="cfgRows" class="letters-input" value="A,B,C,D" placeholder="A,B,C" />
+        </div>
+
+        <div class="config-row">
+          <span class="config-label">Columnas (1 a…)</span>
+          <input type="number" id="cfgCols" min="1" max="10" value="5" />
+        </div>
+
+        <button class="btn-primary" onclick="applyConfig()" style="width:100%; margin-top:4px;">Aplicar</button>
+
+        <hr style="border-color:var(--border); margin: 4px 0;" />
+
+        <div style="font-size:0.8rem; color:var(--text-muted);">Agregar ítem rápido</div>
+
+        <div class="config-row">
+          <span class="config-label">Espacio</span>
+          <select id="quickSpace" style="width:80px;"></select>
+        </div>
+        <button class="btn-secondary" onclick="openAddModal()" style="width:100%;">+ Agregar ítem</button>
+
+        <hr style="border-color:var(--border); margin: 4px 0;" />
+        <button class="btn-danger btn-sm" onclick="clearAll()" style="width:100%;">🗑 Borrar todo</button>
+      </div>
+    </div>
+
+    <div class="sidebar-body hidden" id="panel-search">
+      <div id="searchResults" class="search-results">
+        <div class="empty-msg">Usa la barra de búsqueda arriba para encontrar ítems.</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content">
+
+    <!-- STATS -->
+    <div class="summary-bar" id="statsBar"></div>
+
+    <!-- GRID VIEW -->
+    <div id="view-grid">
+      <div class="grid-title">Distribución de Bodega</div>
+      <div class="warehouse-grid" id="warehouseGrid"></div>
+
+      <!-- DETAIL -->
+      <div id="detailPanel" class="detail-panel hidden" style="margin-top:20px;">
+        <div class="detail-header">
+          <div>
+            <div class="detail-title" id="detailTitle">Espacio</div>
+            <div class="detail-subtitle" id="detailSubtitle"></div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-primary btn-sm" onclick="openAddModal()">+ Ítem</button>
+            <button class="btn-icon btn-sm" onclick="closeDetail()">✕</button>
+          </div>
+        </div>
+
+        <table class="items-table" id="detailTable">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Cantidad</th>
+              <th>Unidad</th>
+              <th>Mín.</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="detailBody"></tbody>
+        </table>
+
+        <div id="emptyDetail" class="empty-msg hidden">Este espacio está vacío.</div>
+      </div>
+    </div>
+
+    <!-- ALERTS VIEW -->
+    <div id="view-alerts" class="hidden">
+      <div class="grid-title">Ítems con stock bajo o agotado</div>
+      <div id="alertsList" class="alerts-list"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL AGREGAR / EDITAR ÍTEM -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <h2 id="modalTitle">Agregar ítem</h2>
+    <div class="modal-form">
+      <input type="hidden" id="editItemId" />
+      <div class="form-group">
+        <label>Espacio</label>
+        <select id="modalSpace"></select>
+      </div>
+      <div class="form-group">
+        <label>Nombre del repuesto / material</label>
+        <input type="text" id="modalName" placeholder="Ej: Tuerca M8, Aceite hidráulico…" />
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div class="form-group" style="flex:1;">
+          <label>Cantidad actual</label>
+          <input type="number" id="modalQty" min="0" value="0" />
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Stock mínimo</label>
+          <input type="number" id="modalMin" min="0" value="0" />
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Unidad</label>
+          <input type="text" id="modalUnit" placeholder="pcs, kg, L…" value="pcs" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notas (opcional)</label>
+        <input type="text" id="modalNotes" placeholder="Referencia, proveedor…" />
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveItem()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+
+const STORAGE_KEY = 'bodega_v1';
+
+let state = {
+  rows: ['A','B','C','D'],
+  cols: 5,
+  spaces: {}   // { "A1": [ {id, name, qty, min, unit, notes} ] }
+};
+
+let selectedSpace = null;
+
+// ─── PERSISTENCE ─────────────────────────────────────────────────────────────
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state = JSON.parse(raw);
+  } catch(e) { /* ignore */ }
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function allSpaceIds() {
+  const ids = [];
+  for (const row of state.rows)
+    for (let c = 1; c <= state.cols; c++)
+      ids.push(`${row}${c}`);
+  return ids;
+}
+
+function getItems(spaceId) { return state.spaces[spaceId] || []; }
+
+function statusOf(item) {
+  if (item.qty === 0) return 'out';
+  if (item.min > 0 && item.qty <= item.min) return 'low';
+  return 'ok';
+}
+
+function statusLabel(item) {
+  const s = statusOf(item);
+  if (s === 'out') return '<span class="badge badge-out">Agotado</span>';
+  if (s === 'low') return '<span class="badge badge-low">Bajo</span>';
+  return '<span class="badge badge-ok">OK</span>';
+}
+
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+
+function applyConfig() {
+  const rowsRaw = document.getElementById('cfgRows').value;
+  const colsRaw = parseInt(document.getElementById('cfgCols').value, 10);
+
+  const rows = rowsRaw.split(',').map(r => r.trim().toUpperCase()).filter(r => r.length === 1 && /[A-Z]/.test(r));
+  if (!rows.length || isNaN(colsRaw) || colsRaw < 1 || colsRaw > 10) {
+    alert('Configuración inválida. Usa letras separadas por coma (máx 10 filas, máx 10 columnas).');
+    return;
+  }
+  state.rows = rows;
+  state.cols = colsRaw;
+  save();
+  render();
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+
+function render() {
+  renderStats();
+  renderGrid();
+  renderSpaceSelects();
+  if (selectedSpace) renderDetail(selectedSpace);
+}
+
+function renderStats() {
+  const allItems = Object.values(state.spaces).flat();
+  const total = allItems.length;
+  const low   = allItems.filter(i => statusOf(i) === 'low').length;
+  const out   = allItems.filter(i => statusOf(i) === 'out').length;
+  const spaces = allSpaceIds().length;
+
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${spaces}</div><div class="stat-label">Espacios</div></div>
+    <div class="stat-card ok"><div class="stat-value">${total}</div><div class="stat-label">Ítems registrados</div></div>
+    <div class="stat-card warning"><div class="stat-value">${low}</div><div class="stat-label">Stock bajo</div></div>
+    <div class="stat-card danger"><div class="stat-value">${out}</div><div class="stat-label">Agotados</div></div>
+  `;
+}
+
+function renderGrid() {
+  const grid = document.getElementById('warehouseGrid');
+  grid.style.gridTemplateColumns = `repeat(${state.cols + 1}, minmax(80px, 1fr))`;
+
+  let html = '<div></div>'; // corner
+  for (let c = 1; c <= state.cols; c++)
+    html += `<div style="text-align:center;font-size:0.72rem;font-weight:700;color:var(--text-muted);padding-bottom:4px;">${c}</div>`;
+
+  for (const row of state.rows) {
+    html += `<div style="display:flex;align-items:center;font-size:0.72rem;font-weight:800;color:var(--text-muted);padding-right:4px;">${row}</div>`;
+    for (let c = 1; c <= state.cols; c++) {
+      const id = `${row}${c}`;
+      const items = getItems(id);
+      const hasLow = items.some(i => statusOf(i) === 'low');
+      const hasOut = items.some(i => statusOf(i) === 'out');
+      const isEmpty = items.length === 0;
+      let cls = 'grid-cell';
+      if (isEmpty) cls += ' empty-cell';
+      if (hasOut) cls += ' low-stock';
+      else if (hasLow) cls += ' low-stock';
+      if (id === selectedSpace) cls += ' selected';
+
+      const preview = items.slice(0, 3).map(item => {
+        let ic = 'cell-item';
+        const s = statusOf(item);
+        if (s === 'low') ic += ' low';
+        if (s === 'out') ic += ' out';
+        return `<div class="${ic}"><span class="qty">${item.qty}</span> ${escHtml(item.name)}</div>`;
+      }).join('');
+      const more = items.length > 3 ? `<div class="cell-more">+${items.length - 3} más</div>` : '';
+
+      html += `
+        <div class="${cls}" onclick="selectSpace('${id}')" title="${id}: ${items.length} ítems">
+          <div class="cell-label">${id}</div>
+          <div class="cell-items">${preview}${more}</div>
+        </div>`;
+    }
+  }
+
+  grid.innerHTML = html;
+}
+
+function renderSpaceSelects() {
+  const ids = allSpaceIds();
+  const opts = ids.map(id => `<option value="${id}">${id}</option>`).join('');
+  ['quickSpace','modalSpace'].forEach(sid => {
+    const el = document.getElementById(sid);
+    if (!el) return;
+    const prev = el.value;
+    el.innerHTML = opts;
+    if (ids.includes(prev)) el.value = prev;
+  });
+  if (selectedSpace) {
+    ['quickSpace','modalSpace'].forEach(sid => {
+      const el = document.getElementById(sid);
+      if (el) el.value = selectedSpace;
+    });
+  }
+}
+
+function renderDetail(spaceId) {
+  const panel = document.getElementById('detailPanel');
+  panel.classList.remove('hidden');
+  document.getElementById('detailTitle').textContent = `Espacio ${spaceId}`;
+  const items = getItems(spaceId);
+  document.getElementById('detailSubtitle').textContent = `${items.length} ítem(s) registrado(s)`;
+
+  const emptyMsg = document.getElementById('emptyDetail');
+  const table    = document.getElementById('detailTable');
+
+  if (items.length === 0) {
+    table.classList.add('hidden');
+    emptyMsg.classList.remove('hidden');
+  } else {
+    table.classList.remove('hidden');
+    emptyMsg.classList.add('hidden');
+    document.getElementById('detailBody').innerHTML = items.map(item => `
+      <tr>
+        <td>
+          <div style="font-weight:600;">${escHtml(item.name)}</div>
+          ${item.notes ? `<div style="font-size:0.72rem;color:var(--text-muted);">${escHtml(item.notes)}</div>` : ''}
+        </td>
+        <td>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <button class="btn-icon btn-sm" onclick="changeQty('${spaceId}','${item.id}',-1)">−</button>
+            <span style="min-width:28px;text-align:center;font-weight:700;">${item.qty}</span>
+            <button class="btn-icon btn-sm" onclick="changeQty('${spaceId}','${item.id}',1)">+</button>
+          </div>
+        </td>
+        <td style="color:var(--text-muted);">${escHtml(item.unit)}</td>
+        <td style="color:var(--text-muted);">${item.min}</td>
+        <td>${statusLabel(item)}</td>
+        <td>
+          <div style="display:flex;gap:4px;">
+            <button class="btn-icon btn-sm" title="Editar" onclick="editItem('${spaceId}','${item.id}')">✎</button>
+            <button class="btn-icon btn-sm" style="color:var(--danger);" title="Eliminar" onclick="deleteItem('${spaceId}','${item.id}')">✕</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+}
+
+function renderAlerts() {
+  const allItems = [];
+  for (const [spaceId, items] of Object.entries(state.spaces))
+    for (const item of items)
+      if (statusOf(item) !== 'ok') allItems.push({ spaceId, item });
+
+  allItems.sort((a,b) => {
+    const order = {out:0, low:1};
+    return (order[statusOf(a.item)] || 2) - (order[statusOf(b.item)] || 2);
+  });
+
+  const container = document.getElementById('alertsList');
+  if (!allItems.length) {
+    container.innerHTML = '<div class="empty-msg">No hay alertas. Todo el stock está en niveles normales.</div>';
+    return;
+  }
+
+  container.innerHTML = allItems.map(({ spaceId, item }) => {
+    const s = statusOf(item);
+    return `<div class="alert-item ${s === 'out' ? 'out' : ''}">
+      <span class="al-loc">${spaceId}</span>
+      <span class="al-name">${escHtml(item.name)}</span>
+      <span class="al-qty">${item.qty} ${escHtml(item.unit)} ${item.min > 0 ? `/ mín ${item.min}` : ''}</span>
+      <button class="btn-icon btn-sm" onclick="selectSpace('${spaceId}'); showView('grid');">→</button>
+    </div>`;
+  }).join('');
+}
+
+// ─── INTERACTIONS ─────────────────────────────────────────────────────────────
+
+function selectSpace(id) {
+  selectedSpace = id;
+  document.querySelectorAll('.grid-cell').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('.grid-cell').forEach(el => {
+    if (el.querySelector('.cell-label')?.textContent === id) el.classList.add('selected');
+  });
+  renderDetail(id);
+  renderSpaceSelects();
+}
+
+function closeDetail() {
+  selectedSpace = null;
+  document.getElementById('detailPanel').classList.add('hidden');
+  document.querySelectorAll('.grid-cell').forEach(el => el.classList.remove('selected'));
+}
+
+function changeQty(spaceId, itemId, delta) {
+  const items = state.spaces[spaceId] || [];
+  const item = items.find(i => i.id === itemId);
+  if (!item) return;
+  item.qty = Math.max(0, item.qty + delta);
+  save();
+  render();
+}
+
+function deleteItem(spaceId, itemId) {
+  if (!confirm('¿Eliminar este ítem?')) return;
+  state.spaces[spaceId] = (state.spaces[spaceId] || []).filter(i => i.id !== itemId);
+  save();
+  render();
+}
+
+// ─── MODAL ────────────────────────────────────────────────────────────────────
+
+function openAddModal() {
+  document.getElementById('editItemId').value = '';
+  document.getElementById('modalTitle').textContent = 'Agregar ítem';
+  document.getElementById('modalName').value = '';
+  document.getElementById('modalQty').value = '0';
+  document.getElementById('modalMin').value = '0';
+  document.getElementById('modalUnit').value = 'pcs';
+  document.getElementById('modalNotes').value = '';
+  renderSpaceSelects();
+  if (selectedSpace) document.getElementById('modalSpace').value = selectedSpace;
+  document.getElementById('addModal').classList.add('open');
+  setTimeout(() => document.getElementById('modalName').focus(), 50);
+}
+
+function editItem(spaceId, itemId) {
+  const item = (state.spaces[spaceId] || []).find(i => i.id === itemId);
+  if (!item) return;
+  document.getElementById('editItemId').value = itemId;
+  document.getElementById('modalTitle').textContent = 'Editar ítem';
+  renderSpaceSelects();
+  document.getElementById('modalSpace').value = spaceId;
+  document.getElementById('modalName').value = item.name;
+  document.getElementById('modalQty').value = item.qty;
+  document.getElementById('modalMin').value = item.min;
+  document.getElementById('modalUnit').value = item.unit;
+  document.getElementById('modalNotes').value = item.notes || '';
+  document.getElementById('addModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('addModal').classList.remove('open');
+}
+
+function saveItem() {
+  const editId  = document.getElementById('editItemId').value;
+  const spaceId = document.getElementById('modalSpace').value;
+  const name    = document.getElementById('modalName').value.trim();
+  const qty     = Math.max(0, parseInt(document.getElementById('modalQty').value, 10) || 0);
+  const min     = Math.max(0, parseInt(document.getElementById('modalMin').value, 10) || 0);
+  const unit    = document.getElementById('modalUnit').value.trim() || 'pcs';
+  const notes   = document.getElementById('modalNotes').value.trim();
+
+  if (!name) { alert('El nombre es obligatorio.'); return; }
+
+  if (!state.spaces[spaceId]) state.spaces[spaceId] = [];
+
+  if (editId) {
+    // Find and update — may need to move to different space
+    let found = false;
+    for (const [sid, items] of Object.entries(state.spaces)) {
+      const idx = items.findIndex(i => i.id === editId);
+      if (idx !== -1) {
+        if (sid !== spaceId) {
+          items.splice(idx, 1);
+          state.spaces[spaceId].push({ id: editId, name, qty, min, unit, notes });
+        } else {
+          items[idx] = { id: editId, name, qty, min, unit, notes };
+        }
+        found = true;
+        break;
+      }
+    }
+    if (!found) state.spaces[spaceId].push({ id: editId, name, qty, min, unit, notes });
+  } else {
+    state.spaces[spaceId].push({ id: genId(), name, qty, min, unit, notes });
+  }
+
+  selectedSpace = spaceId;
+  save();
+  closeModal();
+  render();
+}
+
+// ─── SEARCH ──────────────────────────────────────────────────────────────────
+
+function doSearch(query) {
+  const q = query.trim().toLowerCase();
+  const container = document.getElementById('searchResults');
+
+  // Clear highlights
+  document.querySelectorAll('.grid-cell.highlight').forEach(el => el.classList.remove('highlight'));
+
+  if (!q) {
+    container.innerHTML = '<div class="empty-msg">Usa la barra de búsqueda arriba para encontrar ítems.</div>';
+    return;
+  }
+
+  const results = [];
+  for (const [spaceId, items] of Object.entries(state.spaces)) {
+    for (const item of items) {
+      if (item.name.toLowerCase().includes(q) || (item.notes || '').toLowerCase().includes(q)) {
+        results.push({ spaceId, item });
+      }
+    }
+  }
+
+  if (!results.length) {
+    container.innerHTML = `<div class="empty-msg">Sin resultados para "${escHtml(query)}".</div>`;
+    return;
+  }
+
+  // Highlight grid cells
+  results.forEach(({ spaceId }) => {
+    document.querySelectorAll('.grid-cell').forEach(el => {
+      if (el.querySelector('.cell-label')?.textContent === spaceId) el.classList.add('highlight');
+    });
+  });
+
+  container.innerHTML = results.map(({ spaceId, item }) => {
+    const s = statusOf(item);
+    return `<div class="result-card" onclick="selectSpace('${spaceId}'); showView('grid');">
+      <div class="rc-name">${escHtml(item.name)}</div>
+      <div class="rc-meta">${item.qty} ${escHtml(item.unit)} ${item.notes ? '· ' + escHtml(item.notes) : ''}</div>
+      <span class="rc-loc">${spaceId}</span>
+      ${s !== 'ok' ? `<span class="badge ${s === 'out' ? 'badge-out' : 'badge-low'}" style="margin-left:4px;">${s === 'out' ? 'Agotado' : 'Bajo'}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ─── VIEW SWITCHING ───────────────────────────────────────────────────────────
+
+function showView(view) {
+  document.getElementById('view-grid').classList.toggle('hidden', view !== 'grid');
+  document.getElementById('view-alerts').classList.toggle('hidden', view !== 'alerts');
+  if (view === 'alerts') renderAlerts();
+}
+
+function switchTab(tab) {
+  document.getElementById('panel-config').classList.toggle('hidden', tab !== 'config');
+  document.getElementById('panel-search').classList.toggle('hidden', tab !== 'search');
+  document.getElementById('tab-config').classList.toggle('active', tab === 'config');
+  document.getElementById('tab-search').classList.toggle('active', tab === 'search');
+}
+
+// ─── EXPORT ──────────────────────────────────────────────────────────────────
+
+function exportData() {
+  const rows = [['Espacio','Nombre','Cantidad','Unidad','Mín. Stock','Estado','Notas']];
+  for (const [spaceId, items] of Object.entries(state.spaces)) {
+    for (const item of items) {
+      rows.push([spaceId, item.name, item.qty, item.unit, item.min, statusOf(item), item.notes || '']);
+    }
+  }
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `inventario_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── CLEAR ALL ────────────────────────────────────────────────────────────────
+
+function clearAll() {
+  if (!confirm('¿Borrar TODO el inventario? Esta acción no se puede deshacer.')) return;
+  state.spaces = {};
+  selectedSpace = null;
+  save();
+  render();
+  document.getElementById('detailPanel').classList.add('hidden');
+}
+
+// ─── ESCAPE HTML ─────────────────────────────────────────────────────────────
+
+function escHtml(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── EVENTS ───────────────────────────────────────────────────────────────────
+
+document.getElementById('globalSearch').addEventListener('input', e => {
+  const q = e.target.value;
+  if (q.length > 0) switchTab('search');
+  doSearch(q);
+});
+
+document.getElementById('addModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('addModal')) closeModal();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ─── SEED DATA (first run) ────────────────────────────────────────────────────
+
+function seedDemo() {
+  state.spaces = {
+    'A1': [
+      { id: genId(), name: 'Tuerca M8',      qty: 120, min: 20,  unit: 'pcs',  notes: 'Acero inox' },
+      { id: genId(), name: 'Perno M8x30',    qty: 80,  min: 20,  unit: 'pcs',  notes: '' },
+    ],
+    'A2': [
+      { id: genId(), name: 'Arandela plana 3/8', qty: 5, min: 30, unit: 'pcs', notes: '' },
+    ],
+    'A3': [
+      { id: genId(), name: 'Aceite hidráulico',  qty: 0, min: 2,  unit: 'L',   notes: 'ISO 46' },
+    ],
+    'B1': [
+      { id: genId(), name: 'Filtro de aire',     qty: 3, min: 2,  unit: 'pcs', notes: 'Motor principal' },
+      { id: genId(), name: 'Filtro de aceite',   qty: 1, min: 2,  unit: 'pcs', notes: '' },
+    ],
+    'B3': [
+      { id: genId(), name: 'Correa de distribución', qty: 2, min: 1, unit: 'pcs', notes: '' },
+    ],
+    'C2': [
+      { id: genId(), name: 'Fusible 10A',       qty: 15, min: 5,  unit: 'pcs', notes: '' },
+      { id: genId(), name: 'Fusible 5A',        qty: 8,  min: 5,  unit: 'pcs', notes: '' },
+    ],
+  };
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+
+load();
+
+if (Object.keys(state.spaces).length === 0) seedDemo();
+
+document.getElementById('cfgRows').value = state.rows.join(',');
+document.getElementById('cfgCols').value = state.cols;
+
+render();
+</script>
+</body>
+</html>
