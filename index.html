@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.3.0</title>
+  <title>Inventario v2.4.0</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
   <script type="module">
@@ -152,7 +152,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.3.0</span>
+    <span class="vbadge" id="vbadge">v2.4.0</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -316,7 +316,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.3.0';
+const APP_VERSION = 'v2.4.0';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -472,39 +472,35 @@ function renderDatalist() {
 // ── 3D MAP ─────────────────────────────────────────────────────────────────────
 let m3 = null; // scene state
 
-// Physical layout: Pasillo C | E3C | E3B | Pasillo B | E2B | E2A | Pasillo A | E1
-// In 3D: X = left/right, Y = height, Z = depth (shelves extend from z=0 to z=-DEPTH)
-const SHELF_DEPTH = 8;
-const ROW_H = 1.1;
-const AISLE_3D = 3.5;
-const GAP_3D = 0.3;
+// Physical layout (fixed X axis):
+//   Pasillo C (x:0–3.5) | [E3C·E3B unit] (x:3.5–4.1) | Pasillo B (x:4.1–7.6)
+//   | [E2B·E2A unit] (x:7.6–8.2) | Pasillo A (x:8.2–11.7) | [E1 unit] (x:11.7–12.3)
+// Aisles run Z (front→back). Shelf faces are perpendicular to X axis.
+const AISLE_W    = 3.5;  // aisle width in X
+const UNIT_THICK = 0.6;  // shelf unit depth in X
+const COL_DEPTH  = 1.5;  // Z depth per column slot
+const ROW_H      = 1.1;  // Y height per row
+const SHELF_Z    = 0;    // Z position of front edge of shelves
 
-function build3DLayout() {
-  const sh = shelves(), byId = {};
-  sh.forEach(s => byId[s.id] = s);
-  const items = [];
-  let x = 0;
-  const pAisle = (label) => { items.push({type:'aisle',label,x,w:AISLE_3D}); x += AISLE_3D + GAP_3D; };
-  const pShelf = (id) => {
-    const s = byId[id]; if(!s) return;
-    const w = shelfW(s);
-    items.push({type:'shelf',id,x,w,sh:s}); x += w + GAP_3D;
-  };
-  pAisle('PASILLO C');
-  pShelf('E3C'); pShelf('E3B');
-  pAisle('PASILLO B');
-  pShelf('E2B'); pShelf('E2A');
-  pAisle('PASILLO A');
-  pShelf('E1');
-  for(const s of sh) if(!['E3C','E3B','E2B','E2A','E1'].includes(s.id)) pShelf(s.id);
-  return { items, totalW: x };
+// Each face: faceX = X of the aisle-facing surface, facing = ±1 toward aisle
+const FACE_DEFS = [
+  { id:'E3C', faceX:3.5,  facing:-1, aisleX:1.75  },
+  { id:'E3B', faceX:4.1,  facing:+1, aisleX:5.85  },
+  { id:'E2B', faceX:7.6,  facing:-1, aisleX:5.85  },
+  { id:'E2A', faceX:8.2,  facing:+1, aisleX:9.95  },
+  { id:'E1',  faceX:11.7, facing:-1, aisleX:9.95  },
+];
+const TOTAL_X = 12.3;
+
+function cellStatusHex(its) {
+  if(!its.length) return null;
+  if(its.some(i=>ef(i)===0)) return 0xef4444;
+  if(its.some(i=>(i.retirado||0)>0)) return 0xf59e0b;
+  return 0x22c55e;
 }
 
 function initOrRefreshMap() {
-  if(!window._threeReady) {
-    window._onThreeReady = initOrRefreshMap;
-    return;
-  }
+  if(!window._threeReady) { window._onThreeReady = initOrRefreshMap; return; }
   if(!m3) initMap3D();
   else refreshMap3D();
 }
@@ -525,75 +521,79 @@ function initMap3D() {
   renderer.shadowMap.type = T.PCFSoftShadowMap;
 
   const scene = new T.Scene();
-  scene.fog = new T.FogExp2(0x07111f, 0.018);
+  scene.fog = new T.FogExp2(0x07111f, 0.014);
 
   const camera = new T.PerspectiveCamera(52, W/H, 0.1, 300);
-  const layout = build3DLayout();
-  const cx = layout.totalW / 2;
-  camera.position.set(cx, 14, 22);
+  const sh0 = shelfById('E3C') || shelves()[0];
+  const MID_Z = SHELF_Z - ((sh0?.cols||5) * COL_DEPTH / 2);
+  camera.position.set(TOTAL_X/2, 10, 8);
 
   const controls = new OC(camera, renderer.domElement);
-  controls.target.set(cx, 2, -SHELF_DEPTH/2);
+  controls.target.set(TOTAL_X/2, 2, MID_Z);
   controls.enableDamping = true;
   controls.dampingFactor = 0.07;
   controls.minDistance = 2;
   controls.maxDistance = 60;
-  controls.maxPolarAngle = Math.PI / 2 - 0.01;
+  controls.maxPolarAngle = Math.PI/2 - 0.01;
   controls.update();
 
   // Lighting
-  scene.add(new T.AmbientLight(0x1a3050, 1.2));
-  const sun = new T.DirectionalLight(0xffffff, 1.0);
-  sun.position.set(10, 25, 15);
+  scene.add(new T.AmbientLight(0x1a3050, 1.5));
+  const sun = new T.DirectionalLight(0xffffff, 0.8);
+  sun.position.set(TOTAL_X/2, 20, 8);
   sun.castShadow = true;
   sun.shadow.camera.near = 1; sun.shadow.camera.far = 80;
-  sun.shadow.camera.left = -30; sun.shadow.camera.right = 30;
-  sun.shadow.camera.top = 20; sun.shadow.camera.bottom = -20;
+  sun.shadow.camera.left = -20; sun.shadow.camera.right = 20;
+  sun.shadow.camera.top = 15; sun.shadow.camera.bottom = -15;
   sun.shadow.mapSize.set(2048, 2048);
   scene.add(sun);
-  const fill = new T.DirectionalLight(0x4080c0, 0.4);
-  fill.position.set(-8, 5, -10); scene.add(fill);
+  const fill = new T.DirectionalLight(0x4080c0, 0.3);
+  fill.position.set(-5, 8, 5); scene.add(fill);
 
-  // Ceiling lights
-  for(let lx = 0; lx < layout.totalW; lx += 6) {
-    const pl = new T.PointLight(0xb0d0ff, 0.6, 18);
-    pl.position.set(lx, 9, -SHELF_DEPTH/2);
-    scene.add(pl);
+  // Ceiling lights above each aisle (along Z)
+  for(const ax of [1.75, 5.85, 9.95]) {
+    for(let lz = SHELF_Z; lz > MID_Z*2 - 1; lz -= 3.5) {
+      const pl = new T.PointLight(0xb0d0ff, 0.55, 14);
+      pl.position.set(ax, 8, lz);
+      scene.add(pl);
+    }
   }
 
   // Floor
-  const floorGeo = new T.PlaneGeometry(120, 80);
   const floorMat = new T.MeshLambertMaterial({color:0x0d1626});
-  const floor = new T.Mesh(floorGeo, floorMat);
+  const floor = new T.Mesh(new T.PlaneGeometry(TOTAL_X+6, 16), floorMat);
   floor.rotation.x = -Math.PI/2; floor.receiveShadow = true;
-  floor.position.set(cx, 0, -SHELF_DEPTH/2);
+  floor.position.set(TOTAL_X/2, 0, MID_Z);
   scene.add(floor);
 
-  // Aisle lines on floor
-  const lineMat = new T.LineBasicMaterial({color:0x1e3a5f, transparent:true, opacity:0.5});
-  for(const item of layout.items) {
-    if(item.type !== 'aisle') continue;
-    const ax = item.x + item.w/2;
-    const pts = [new T.Vector3(ax, 0.02, 2), new T.Vector3(ax, 0.02, -SHELF_DEPTH-2)];
+  // Aisle lines on floor (run along Z)
+  const lineMat = new T.LineBasicMaterial({color:0x1e3a5f, transparent:true, opacity:0.55});
+  for(const ax of [1.75, 5.85, 9.95]) {
+    const pts = [new T.Vector3(ax,0.02,SHELF_Z+2), new T.Vector3(ax,0.02,SHELF_Z-10)];
     scene.add(new T.Line(new T.BufferGeometry().setFromPoints(pts), lineMat));
   }
 
   // Back wall
-  const wallGeo = new T.PlaneGeometry(layout.totalW + 10, 14);
   const wallMat = new T.MeshLambertMaterial({color:0x111f33});
-  const wall = new T.Mesh(wallGeo, wallMat);
-  wall.position.set(cx, 7, -SHELF_DEPTH - 1);
-  wall.receiveShadow = true;
-  scene.add(wall);
+  const bw = new T.Mesh(new T.PlaneGeometry(TOTAL_X+4, 14), wallMat);
+  bw.position.set(TOTAL_X/2, 7, SHELF_Z-8.5); bw.receiveShadow = true;
+  scene.add(bw);
+
+  // Side wall behind E1
+  const swMat = new T.MeshLambertMaterial({color:0x0f1a2e});
+  const sw = new T.Mesh(new T.PlaneGeometry(14, 14), swMat);
+  sw.rotation.y = -Math.PI/2; sw.position.set(TOTAL_X+0.35, 7, MID_Z);
+  scene.add(sw);
+  // Left wall (Pasillo C side)
+  const lw = new T.Mesh(new T.PlaneGeometry(14, 14), swMat);
+  lw.rotation.y = Math.PI/2; lw.position.set(-0.35, 7, MID_Z);
+  scene.add(lw);
 
   // Raycasting
   const raycaster = new T.Raycaster();
   const mouse2 = new T.Vector2();
   let mdPos = null, mdTime = 0;
-
-  renderer.domElement.addEventListener('mousedown', e => {
-    mdPos = {x:e.clientX, y:e.clientY}; mdTime = Date.now();
-  });
+  renderer.domElement.addEventListener('mousedown', e => { mdPos={x:e.clientX,y:e.clientY}; mdTime=Date.now(); });
   renderer.domElement.addEventListener('click', e => {
     if(!mdPos) return;
     const dx=e.clientX-mdPos.x, dy=e.clientY-mdPos.y;
@@ -619,17 +619,15 @@ function initMap3D() {
 
   // Resize
   const ro = new ResizeObserver(() => {
-    const W = wrap.clientWidth, H = wrap.clientHeight;
-    camera.aspect = W/H; camera.updateProjectionMatrix();
-    renderer.setSize(W, H);
+    const W2 = wrap.clientWidth, H2 = wrap.clientHeight;
+    camera.aspect = W2/H2; camera.updateProjectionMatrix();
+    renderer.setSize(W2, H2);
   });
   ro.observe(wrap);
 
-  m3 = { T, renderer, scene, camera, controls, shelfGroups:{}, labelEls:{}, cx, animFrame:null };
-
+  m3 = { T, renderer, scene, camera, controls, shelfGroups:{}, labelEls:{}, animFrame:null };
   buildShelves3D();
 
-  // Render loop
   (function loop() {
     requestAnimationFrame(loop);
     controls.update();
@@ -641,19 +639,17 @@ function initMap3D() {
 function disposeGroup(g) {
   g.traverse(o => {
     if(o.geometry) o.geometry.dispose();
-    if(o.material) { const m = Array.isArray(o.material)?o.material:[o.material]; m.forEach(x=>x.dispose()); }
+    if(o.material) { const m=Array.isArray(o.material)?o.material:[o.material]; m.forEach(x=>x.dispose()); }
   });
 }
 
 function buildShelves3D() {
   if(!m3) return;
   const { T, scene, shelfGroups, labelEls } = m3;
-
   Object.values(shelfGroups).forEach(g => { disposeGroup(g); scene.remove(g); });
   Object.values(labelEls).forEach(el => el.remove());
   m3.shelfGroups = {}; m3.labelEls = {};
 
-  const layout = build3DLayout();
   const srchQ = (document.getElementById('searchInput').value||'').toLowerCase();
   const matchedShelves = new Set();
   if(srchQ) {
@@ -664,93 +660,111 @@ function buildShelves3D() {
     }
   }
 
-  for(const item of layout.items) {
-    if(item.type !== 'shelf') continue;
-    const sh = item.sh;
-    const h3d = sh.rows * ROW_H;
-    const cx3d = item.x + item.w/2;
-    const statusHex = shelfStatusHex(item.id);
-    const isSelected = currentShelf === item.id;
-    const isMatch = srchQ ? matchedShelves.has(item.id) : true;
+  for(const def of FACE_DEFS) {
+    const sh = shelfById(def.id); if(!sh) continue;
+    const isSelected = currentShelf === def.id;
+    const isMatch = srchQ ? matchedShelves.has(def.id) : true;
+    const groupOpacity = (currentShelf && !isSelected) ? 0.12 : (!srchQ || isMatch ? 1 : 0.15);
 
-    const group = makeShelfGroup(T, sh, item.w, h3d, SHELF_DEPTH, statusHex, isSelected);
-    group.position.set(cx3d, h3d/2, -SHELF_DEPTH/2);
-    group.userData.shelfId = item.id;
+    const group = makeShelfFace3D(T, sh, def.id, def.facing, isSelected);
+    group.position.set(def.faceX, 0, SHELF_Z);
+    group.userData.shelfId = def.id;
 
-    // Fade non-selected / non-matching
-    const opacity = (currentShelf && !isSelected) ? 0.12 : (!srchQ || isMatch ? 1 : 0.15);
-    group.traverse(o => { if(o.material) { o.material.transparent = opacity < 1; o.material.opacity = opacity; } });
+    if(groupOpacity < 1) {
+      group.traverse(o => {
+        if(o.material) {
+          const mats = Array.isArray(o.material)?o.material:[o.material];
+          mats.forEach(m => { m.transparent=true; m.opacity=Math.min(m.opacity??1, groupOpacity); });
+        }
+      });
+    }
 
     scene.add(group);
-    m3.shelfGroups[item.id] = group;
+    m3.shelfGroups[def.id] = group;
 
-    // Label
-    makeLabel(item.id, sh, cx3d, h3d);
+    const FACE_Y = sh.rows * ROW_H;
+    const FACE_Z = sh.cols * COL_DEPTH;
+    makeLabel3(def.id, sh, new T.Vector3(def.faceX, FACE_Y+0.8, SHELF_Z-FACE_Z/2));
   }
 }
 
-function makeShelfGroup(T, sh, w, h, d, statusHex, isSelected) {
+function makeShelfFace3D(T, sh, shId, facing, isSelected) {
   const g = new T.Group();
-  const boardH = 0.06, sideW = 0.07;
-  const hasItems = statusHex !== 0x1e293b;
+  const FACE_Z = sh.cols * COL_DEPTH;
+  const FACE_Y = sh.rows * ROW_H;
+  const BOARD_H = 0.06;
+  const DIV_T   = 0.05;
+  // backX: X offset of back panel from face (negative facing = aisle is to the left)
+  const backX = -facing * UNIT_THICK;
+  const midX  = backX / 2;
 
-  // Back panel
-  const backM = new T.MeshLambertMaterial({color:0x0f1e30});
-  const backMesh = new T.Mesh(new T.BoxGeometry(w-sideW*2, h, 0.05), backM);
-  backMesh.position.z = -(d/2-0.03); backMesh.castShadow = true; g.add(backMesh);
-
-  // Side panels
-  const sideM = new T.MeshLambertMaterial({color:0x253348});
-  for(const sx of [-1,1]) {
-    const s = new T.Mesh(new T.BoxGeometry(sideW, h, d), sideM);
-    s.position.set(sx*(w/2-sideW/2), 0, 0); s.castShadow = true; g.add(s);
-  }
-
-  // Shelf boards
+  // Horizontal shelf boards (full Z span, full X thickness)
   const boardM = new T.MeshLambertMaterial({color:0x1c3050});
-  for(let r=0; r<=sh.rows; r++) {
-    const b = new T.Mesh(new T.BoxGeometry(w, boardH, d), boardM.clone());
-    b.position.set(0, -h/2+r*(h/sh.rows), 0);
-    b.castShadow = true; b.receiveShadow = true; g.add(b);
+  for(let r = 0; r <= sh.rows; r++) {
+    const b = new T.Mesh(new T.BoxGeometry(UNIT_THICK, BOARD_H, FACE_Z), boardM.clone());
+    b.position.set(midX, r*ROW_H, -FACE_Z/2);
+    b.castShadow = true; b.receiveShadow = true;
+    g.add(b);
   }
 
-  // Status glow on front face
-  if(hasItems) {
-    const c = new T.Color(statusHex);
-    const glowM = new T.MeshLambertMaterial({color:c, transparent:true, opacity:0.22, depthWrite:false});
-    const glow = new T.Mesh(new T.BoxGeometry(w-sideW*2-0.02, h-boardH*2, 0.015), glowM);
-    glow.position.z = d/2-0.008; g.add(glow);
-    // Emissive strips per row
-    for(let r=0; r<sh.rows; r++) {
-      const stripM = new T.MeshLambertMaterial({color:c, emissive:c, emissiveIntensity:0.15, transparent:true, opacity:0.1});
-      const strip = new T.Mesh(new T.BoxGeometry(w-sideW*2-0.04, h/sh.rows-boardH*2, 0.01), stripM);
-      strip.position.set(0, -h/2+(r+0.5)*(h/sh.rows), d/2-0.004); g.add(strip);
+  // Column dividers (full Y span, full X thickness, thin in Z)
+  const divM = new T.MeshLambertMaterial({color:0x253348});
+  for(let c = 0; c <= sh.cols; c++) {
+    const d = new T.Mesh(new T.BoxGeometry(UNIT_THICK, FACE_Y, DIV_T), divM.clone());
+    d.position.set(midX, FACE_Y/2, -c*COL_DEPTH);
+    g.add(d);
+  }
+
+  // Back panel (wall side, solid)
+  const backM = new T.MeshLambertMaterial({color:0x0f1e30});
+  const bp = new T.Mesh(new T.BoxGeometry(DIV_T*2, FACE_Y+BOARD_H, FACE_Z), backM);
+  bp.position.set(backX, FACE_Y/2, -FACE_Z/2);
+  g.add(bp);
+
+  // Cell color indicators (visible on aisle-facing surface x=0)
+  const rows = rowLabels(sh);
+  for(let r = 0; r < sh.rows; r++) {
+    for(let c = 0; c < sh.cols; c++) {
+      const its = cellItems(shId, rows[r], c+1);
+      const hex = cellStatusHex(its);
+      if(hex == null) continue;
+      const col = new T.Color(hex);
+      const cm = new T.MeshLambertMaterial({
+        color:col, emissive:col, emissiveIntensity:0.1,
+        transparent:true, opacity:0.35, depthWrite:false
+      });
+      const cH = ROW_H - BOARD_H - 0.01;
+      const cZ = COL_DEPTH - DIV_T - 0.01;
+      const cell = new T.Mesh(new T.BoxGeometry(0.02, cH, cZ), cm);
+      cell.position.set(0, r*ROW_H + BOARD_H + cH/2, -(c*COL_DEPTH + DIV_T/2 + cZ/2));
+      g.add(cell);
     }
   }
 
-  // Selection outline
+  // Selection highlight
   if(isSelected) {
-    const eM = new T.LineBasicMaterial({color:0x3b82f6, linewidth:2});
-    const eg = new T.EdgesGeometry(new T.BoxGeometry(w+0.04, h+0.04, d+0.04));
-    const edges = new T.LineSegments(eg, eM); g.add(edges);
-    // Blue point light in front
-    const pl = new T.PointLight(0x3b82f6, 0.8, 8);
-    pl.position.set(0, 0, d/2+1); g.add(pl);
+    const eM = new T.LineBasicMaterial({color:0x3b82f6});
+    const eg = new T.EdgesGeometry(new T.BoxGeometry(UNIT_THICK+0.1, FACE_Y+0.1, FACE_Z+0.1));
+    const edges = new T.LineSegments(eg, eM);
+    edges.position.set(midX, FACE_Y/2, -FACE_Z/2);
+    g.add(edges);
+    const pl = new T.PointLight(0x3b82f6, 0.9, 10);
+    pl.position.set(-facing*2, FACE_Y/2, -FACE_Z/2);
+    g.add(pl);
   }
 
   return g;
 }
 
-function makeLabel(shelfId, sh, cx3d, h3d) {
+function makeLabel3(shelfId, sh, pos3d) {
   const wrap = document.getElementById('map3DWrap');
   const el = document.createElement('div');
   el.className = 'm3d-lbl';
-
   let cnt=0;
   for(const r of rowLabels(sh)) for(let c=1;c<=sh.cols;c++) cnt+=cellItems(shelfId,r,c).length;
-  el.innerHTML = `<div>${esc(sh.label||shelfId)}</div>${cnt>0?`<div class="m3d-cnt">${cnt} ítem${cnt!==1?'s':''}</div>`:''}`;
+  el.innerHTML=`<div>${esc(sh.label||shelfId)}</div>${cnt>0?`<div class="m3d-cnt">${cnt} ítem${cnt!==1?'s':''}</div>`:''}`;
   wrap.appendChild(el);
-  m3.labelEls[shelfId] = { el, pos3d: new m3.T.Vector3(cx3d, h3d+0.9, -SHELF_DEPTH/2) };
+  m3.labelEls[shelfId] = { el, pos3d };
 }
 
 function updateLabelPositions() {
@@ -763,16 +777,12 @@ function updateLabelPositions() {
     el.style.display = 'block';
     el.style.left = ((v.x+1)/2*W)+'px';
     el.style.top  = ((1-v.y)/2*H)+'px';
-    const fade = (currentShelf && currentShelf!==id) ? 0.15 : 1;
-    el.style.opacity = String(fade);
+    el.style.opacity = String((currentShelf && currentShelf!==id) ? 0.15 : 1);
   }
 }
 
-function refreshMap3D() {
-  if(m3) buildShelves3D();
-}
+function refreshMap3D() { if(m3) buildShelves3D(); }
 
-// Camera animation
 function animCam(posTo, tgtTo, dur=600) {
   const { camera, controls } = m3;
   if(m3.animFrame) cancelAnimationFrame(m3.animFrame);
@@ -780,9 +790,9 @@ function animCam(posTo, tgtTo, dur=600) {
   const p0=camera.position.clone(), t0=controls.target.clone();
   const p1=new m3.T.Vector3(posTo.x,posTo.y,posTo.z);
   const t1=new m3.T.Vector3(tgtTo.x,tgtTo.y,tgtTo.z);
-  const t=performance.now();
+  const ts=performance.now();
   const go=(now)=>{
-    const pct=Math.min(1,(now-t)/dur);
+    const pct=Math.min(1,(now-ts)/dur);
     const e=pct<.5?2*pct*pct:1-(-2*pct+2)**2/2;
     camera.position.lerpVectors(p0,p1,e);
     controls.target.lerpVectors(t0,t1,e);
@@ -794,46 +804,43 @@ function animCam(posTo, tgtTo, dur=600) {
 }
 
 function selectShelf(id) {
-  currentShelf=id;
-  const sh=shelfById(id); if(!sh) return;
+  currentShelf = id;
+  const sh = shelfById(id); if(!sh) return;
   document.getElementById('mapDeselectBtn').style.display='';
   buildShelves3D();
-
   if(m3) {
-    const g=m3.shelfGroups[id];
-    if(g) {
-      const {x, z} = g.position;
-      const h3d = sh.rows*ROW_H;
-      // Camera moves to front of shelf (positive Z = in front)
-      animCam(
-        {x, y:h3d*0.6+0.5, z:z+SHELF_DEPTH/2+6},
-        {x, y:h3d*0.4,     z:z}
-      );
+    const def = FACE_DEFS.find(d=>d.id===id);
+    if(def) {
+      const midZ = SHELF_Z - (sh.cols * COL_DEPTH / 2);
+      // Stand in the aisle, look across at the shelf face
+      animCam({x:def.aisleX, y:2.5, z:midZ}, {x:def.faceX, y:2.0, z:midZ});
     }
   }
   renderShelfInfoPanel(id);
 }
 
 function deselectShelf() {
-  if(!currentShelf&&!m3) return;
-  currentShelf=null;
+  if(!currentShelf && !m3) return;
+  currentShelf = null;
   document.getElementById('mapDeselectBtn').style.display='none';
   document.getElementById('shelfInfoPanel').classList.add('hidden');
   if(m3) {
     buildShelves3D();
-    const layout=build3DLayout(), cx=layout.totalW/2;
-    animCam({x:cx,y:14,z:22},{x:cx,y:2,z:-SHELF_DEPTH/2});
+    const sh0=shelfById('E3C')||shelves()[0];
+    const midZ=SHELF_Z-((sh0?.cols||5)*COL_DEPTH/2);
+    animCam({x:TOTAL_X/2,y:10,z:8},{x:TOTAL_X/2,y:2,z:midZ});
   }
 }
 
 function resetCam() {
   if(!m3) return;
-  currentShelf=null;
+  currentShelf = null;
   document.getElementById('mapDeselectBtn').style.display='none';
   document.getElementById('shelfInfoPanel').classList.add('hidden');
   buildShelves3D();
-  const layout=build3DLayout(), cx=layout.totalW/2;
-  animCam({x:cx,y:14,z:22},{x:cx,y:2,z:-SHELF_DEPTH/2});
+  const sh0=shelfById('E3C')||shelves()[0];
+  const midZ=SHELF_Z-((sh0?.cols||5)*COL_DEPTH/2);
+  animCam({x:TOTAL_X/2,y:10,z:8},{x:TOTAL_X/2,y:2,z:midZ});
 }
 
 // Shelf info panel
