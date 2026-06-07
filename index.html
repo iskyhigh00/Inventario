@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.4.0</title>
+  <title>Inventario v2.5.0</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
   <script type="module">
@@ -140,6 +140,11 @@
     .shelf-cfg-row input:focus{border-color:var(--ac)}
     .shelf-cfg-hdr{display:grid;grid-template-columns:1fr 62px 62px 62px auto;gap:6px;padding:4px 0 6px;font-size:.68rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--bd);margin-bottom:4px}
     ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
+    /* ── PALETAS ── */
+    .theme-tog{display:flex;gap:4px;align-items:center;padding:3px 7px;background:var(--bg);border:1px solid var(--bd);border-radius:20px;flex-shrink:0}
+    .tc{width:16px;height:16px;border-radius:50%;border:2.5px solid transparent;cursor:pointer;padding:0;flex-shrink:0;transition:transform .15s,border-color .15s;outline:none}
+    .tc:hover{transform:scale(1.22)}
+    .tc.active{border-color:var(--tx)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--tx) 20%,transparent)}
     @media(max-width:700px){header{height:auto;padding:8px;flex-wrap:wrap}.cat-tabs,.vtog{order:10}#map3DWrap{height:320px}}
   </style>
 </head>
@@ -152,7 +157,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.4.0</span>
+    <span class="vbadge" id="vbadge">v2.5.0</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -172,6 +177,13 @@
   <div class="role-tog">
     <button class="role-btn active" data-role="visualizador" onclick="setRole('visualizador')">Visualizador</button>
     <button class="role-btn"        data-role="operador"     onclick="setRole('operador')">Operador</button>
+  </div>
+  <div class="theme-tog" title="Paleta de colores">
+    <button class="tc" data-theme="noche"  onclick="setTheme('noche')"  title="Noche"   style="background:#3b82f6"></button>
+    <button class="tc" data-theme="carbon" onclick="setTheme('carbon')" title="Carbón"  style="background:#a78bfa"></button>
+    <button class="tc" data-theme="marina" onclick="setTheme('marina')" title="Marina"  style="background:#22d3ee"></button>
+    <button class="tc" data-theme="bosque" onclick="setTheme('bosque')" title="Bosque"  style="background:#4ade80"></button>
+    <button class="tc" data-theme="claro"  onclick="setTheme('claro')"  title="Claro"   style="background:#94a3b8"></button>
   </div>
   <div class="hacts" id="hacts"></div>
 </header>
@@ -316,7 +328,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.4.0';
+const APP_VERSION = 'v2.5.0';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -521,7 +533,7 @@ function initMap3D() {
   renderer.shadowMap.type = T.PCFSoftShadowMap;
 
   const scene = new T.Scene();
-  scene.fog = new T.FogExp2(0x07111f, 0.014);
+  scene.fog = new T.FogExp2(0x07111f, 0.007);
 
   const camera = new T.PerspectiveCamera(52, W/H, 0.1, 300);
   const sh0 = shelfById('E3C') || shelves()[0];
@@ -538,8 +550,9 @@ function initMap3D() {
   controls.update();
 
   // Lighting
-  scene.add(new T.AmbientLight(0x1a3050, 1.5));
-  const sun = new T.DirectionalLight(0xffffff, 0.8);
+  scene.add(new T.AmbientLight(0xffffff, 2.8));
+  scene.add(new T.HemisphereLight(0x6699cc, 0x223355, 1.2));
+  const sun = new T.DirectionalLight(0xffffff, 1.6);
   sun.position.set(TOTAL_X/2, 20, 8);
   sun.castShadow = true;
   sun.shadow.camera.near = 1; sun.shadow.camera.far = 80;
@@ -547,20 +560,22 @@ function initMap3D() {
   sun.shadow.camera.top = 15; sun.shadow.camera.bottom = -15;
   sun.shadow.mapSize.set(2048, 2048);
   scene.add(sun);
-  const fill = new T.DirectionalLight(0x4080c0, 0.3);
+  const fill = new T.DirectionalLight(0x88aadd, 0.8);
   fill.position.set(-5, 8, 5); scene.add(fill);
+  const fill2 = new T.DirectionalLight(0xffffff, 0.6);
+  fill2.position.set(TOTAL_X+5, 6, MID_Z); scene.add(fill2);
 
   // Ceiling lights above each aisle (along Z)
   for(const ax of [1.75, 5.85, 9.95]) {
     for(let lz = SHELF_Z; lz > MID_Z*2 - 1; lz -= 3.5) {
-      const pl = new T.PointLight(0xb0d0ff, 0.55, 14);
-      pl.position.set(ax, 8, lz);
+      const pl = new T.PointLight(0xd0e8ff, 1.1, 22);
+      pl.position.set(ax, 7.5, lz);
       scene.add(pl);
     }
   }
 
   // Floor
-  const floorMat = new T.MeshLambertMaterial({color:0x0d1626});
+  const floorMat = new T.MeshLambertMaterial({color:0x142035});
   const floor = new T.Mesh(new T.PlaneGeometry(TOTAL_X+6, 16), floorMat);
   floor.rotation.x = -Math.PI/2; floor.receiveShadow = true;
   floor.position.set(TOTAL_X/2, 0, MID_Z);
@@ -574,13 +589,13 @@ function initMap3D() {
   }
 
   // Back wall
-  const wallMat = new T.MeshLambertMaterial({color:0x111f33});
+  const wallMat = new T.MeshLambertMaterial({color:0x1a3050});
   const bw = new T.Mesh(new T.PlaneGeometry(TOTAL_X+4, 14), wallMat);
   bw.position.set(TOTAL_X/2, 7, SHELF_Z-8.5); bw.receiveShadow = true;
   scene.add(bw);
 
   // Side wall behind E1
-  const swMat = new T.MeshLambertMaterial({color:0x0f1a2e});
+  const swMat = new T.MeshLambertMaterial({color:0x16283e});
   const sw = new T.Mesh(new T.PlaneGeometry(14, 14), swMat);
   sw.rotation.y = -Math.PI/2; sw.position.set(TOTAL_X+0.35, 7, MID_Z);
   scene.add(sw);
@@ -699,7 +714,7 @@ function makeShelfFace3D(T, sh, shId, facing, isSelected) {
   const midX  = backX / 2;
 
   // Horizontal shelf boards (full Z span, full X thickness)
-  const boardM = new T.MeshLambertMaterial({color:0x1c3050});
+  const boardM = new T.MeshLambertMaterial({color:0x4a7fb5});
   for(let r = 0; r <= sh.rows; r++) {
     const b = new T.Mesh(new T.BoxGeometry(UNIT_THICK, BOARD_H, FACE_Z), boardM.clone());
     b.position.set(midX, r*ROW_H, -FACE_Z/2);
@@ -708,7 +723,7 @@ function makeShelfFace3D(T, sh, shId, facing, isSelected) {
   }
 
   // Column dividers (full Y span, full X thickness, thin in Z)
-  const divM = new T.MeshLambertMaterial({color:0x253348});
+  const divM = new T.MeshLambertMaterial({color:0x3a6a96});
   for(let c = 0; c <= sh.cols; c++) {
     const d = new T.Mesh(new T.BoxGeometry(UNIT_THICK, FACE_Y, DIV_T), divM.clone());
     d.position.set(midX, FACE_Y/2, -c*COL_DEPTH);
@@ -716,7 +731,7 @@ function makeShelfFace3D(T, sh, shId, facing, isSelected) {
   }
 
   // Back panel (wall side, solid)
-  const backM = new T.MeshLambertMaterial({color:0x0f1e30});
+  const backM = new T.MeshLambertMaterial({color:0x1e3a58});
   const bp = new T.Mesh(new T.BoxGeometry(DIV_T*2, FACE_Y+BOARD_H, FACE_Z), backM);
   bp.position.set(backX, FACE_Y/2, -FACE_Z/2);
   g.add(bp);
@@ -730,8 +745,8 @@ function makeShelfFace3D(T, sh, shId, facing, isSelected) {
       if(hex == null) continue;
       const col = new T.Color(hex);
       const cm = new T.MeshLambertMaterial({
-        color:col, emissive:col, emissiveIntensity:0.1,
-        transparent:true, opacity:0.35, depthWrite:false
+        color:col, emissive:col, emissiveIntensity:0.35,
+        transparent:true, opacity:0.65, depthWrite:false
       });
       const cH = ROW_H - BOARD_H - 0.01;
       const cZ = COL_DEPTH - DIV_T - 0.01;
@@ -1035,6 +1050,38 @@ function doExport() {
   XLSX.writeFile(wb,`inventario_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
+// ── PALETAS DE COLOR ─────────────────────────────────────────────────────────
+const THEMES = {
+  noche:  { bg:'#0f172a', s1:'#1e293b', s2:'#273449', bd:'#334155', ac:'#3b82f6', ach:'#2563eb', tx:'#f1f5f9', mu:'#94a3b8', map3d:0x07111f },
+  carbon: { bg:'#0c0c0f', s1:'#1c1c24', s2:'#252530', bd:'#40404f', ac:'#a78bfa', ach:'#7c3aed', tx:'#f5f3ff', mu:'#b0b0cc', map3d:0x080810 },
+  marina: { bg:'#061525', s1:'#0c2240', s2:'#112e52', bd:'#1e4470', ac:'#22d3ee', ach:'#06b6d4', tx:'#cffafe', mu:'#7dd3fc', map3d:0x040f1c },
+  bosque: { bg:'#070f0a', s1:'#0d2014', s2:'#132c1c', bd:'#1e4a2d', ac:'#4ade80', ach:'#22c55e', tx:'#f0fdf4', mu:'#86efac', map3d:0x050c07 },
+  claro:  { bg:'#f0f4f8', s1:'#ffffff', s2:'#e2e8f0', bd:'#b8c8d8', ac:'#2563eb', ach:'#1d4ed8', tx:'#0f172a', mu:'#4a6080', map3d:0x1a2a3e },
+};
+
+function setTheme(name) {
+  localStorage.setItem('bodega_theme', name);
+  applyTheme(name);
+}
+
+function applyTheme(name) {
+  const t = THEMES[name] || THEMES.noche;
+  const r = document.documentElement.style;
+  r.setProperty('--bg',  t.bg);
+  r.setProperty('--s1',  t.s1);
+  r.setProperty('--s2',  t.s2);
+  r.setProperty('--bd',  t.bd);
+  r.setProperty('--ac',  t.ac);
+  r.setProperty('--ach', t.ach);
+  r.setProperty('--tx',  t.tx);
+  r.setProperty('--mu',  t.mu);
+  document.querySelectorAll('.tc').forEach(b => b.classList.toggle('active', b.dataset.theme === name));
+  if(m3) {
+    m3.renderer.setClearColor(t.map3d);
+    if(m3.scene.fog) { m3.scene.fog.color.set(t.map3d); }
+  }
+}
+
 // OFFLINE
 function chkOnline(){document.getElementById('offlineBanner').classList.toggle('hidden',navigator.onLine);syncTxt();}
 window.addEventListener('online',chkOnline);window.addEventListener('offline',chkOnline);
@@ -1042,6 +1089,7 @@ window.addEventListener('online',chkOnline);window.addEventListener('offline',ch
 // INIT
 load();
 document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role===ses.role));
+applyTheme(localStorage.getItem('bodega_theme')||'noche');
 chkOnline();render();
 </script>
 </body>
