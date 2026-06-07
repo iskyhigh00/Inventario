@@ -696,7 +696,8 @@ function makeShelfGroup(T, sh, w, h, d, statusHex, isSelected) {
 
   // Back panel
   const backM = new T.MeshLambertMaterial({color:0x0f1e30});
-  g.add(Object.assign(new T.Mesh(new T.BoxGeometry(w-sideW*2, h, 0.05), backM), {position:{x:0,y:0,z:-(d/2-0.03)}, castShadow:true}));
+  const backMesh = new T.Mesh(new T.BoxGeometry(w-sideW*2, h, 0.05), backM);
+  backMesh.position.z = -(d/2-0.03); backMesh.castShadow = true; g.add(backMesh);
 
   // Side panels
   const sideM = new T.MeshLambertMaterial({color:0x253348});
