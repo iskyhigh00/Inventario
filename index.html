@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.1.0</title>
+  <title>Inventario v2.2.0</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -15,11 +15,9 @@
     body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
     .hidden{display:none!important}
 
-    /* OFFLINE */
     #offlineBanner{background:#7c2d12;border-bottom:1px solid #dc2626;color:#fca5a5;
       padding:6px 20px;font-size:.82rem;text-align:center}
 
-    /* HEADER */
     header{background:var(--s1);border-bottom:1px solid var(--bd);padding:0 14px;
       display:flex;align-items:center;gap:8px;height:52px;overflow-x:auto;flex-shrink:0}
     .brand{display:flex;align-items:center;gap:6px;white-space:nowrap}
@@ -34,7 +32,6 @@
     .cat-tab:hover{background:var(--s2);color:var(--tx)}
     .cat-tab.active{background:var(--s2);border-color:var(--bd);color:var(--tx)}
 
-    /* view toggle (Lista / Mapa) */
     .vtog{display:flex;background:var(--bg);border:1px solid var(--bd);border-radius:6px;overflow:hidden;flex-shrink:0}
     .vbtn{padding:5px 10px;background:transparent;border:none;color:var(--mu);
       font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
@@ -54,7 +51,6 @@
     .role-btn:hover:not(.active){background:var(--s2);color:var(--tx)}
     .hacts{display:flex;gap:6px;align-items:center;flex-shrink:0}
 
-    /* BUTTONS */
     button{cursor:pointer;border:none;border-radius:var(--r);font-size:.82rem;font-weight:600;
       padding:7px 12px;transition:background .15s,transform .1s}
     button:active{transform:scale(.97)}
@@ -65,21 +61,18 @@
     .bic{padding:5px 7px;background:transparent;color:var(--mu);border:1px solid var(--bd)}
     .bic:hover{color:var(--tx);background:var(--s2)}
 
-    /* MAIN */
     main{padding:12px 14px;display:flex;flex-direction:column;gap:12px}
     .stats{display:flex;gap:8px;flex-wrap:wrap}
     .sc{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:9px 13px;min-width:100px}
     .sc .sv{font-size:1.3rem;font-weight:800}.sc .sl{font-size:.66rem;color:var(--mu);margin-top:2px}
     .sc.ok .sv{color:var(--ok)}.sc.w .sv{color:var(--warn)}.sc.d .sv{color:var(--dan)}
 
-    /* FILTERS */
     .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .filters select{background:var(--s1);border:1px solid var(--bd);border-radius:6px;
       color:var(--tx);padding:5px 9px;font-size:.78rem;outline:none}
     .filters select:focus{border-color:var(--ac)}
     .fl{font-size:.72rem;color:var(--mu)}
 
-    /* TABLE */
     .twrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--bd)}
     table{width:100%;border-collapse:collapse;font-size:.83rem}
     thead th{background:var(--s1);padding:9px 11px;text-align:left;font-size:.7rem;font-weight:700;
@@ -109,44 +102,31 @@
     .empty .ei{font-size:2.2rem;margin-bottom:8px}
     .empty p{font-size:.85rem}
 
-    /* ── MAP VIEW ─────────────────────────────────── */
-    .map-wrap{display:flex;flex-direction:column;gap:14px}
-
-    .fp-container{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);
-      padding:10px;overflow-x:auto}
-    .fp-title{font-size:.72rem;font-weight:700;color:var(--mu);text-transform:uppercase;
-      letter-spacing:.06em;margin-bottom:8px}
-    #fpSVG{width:100%;max-width:860px;display:block;margin:0 auto}
-
-    /* shelf detail panel */
-    .sd-panel{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:14px}
-    .sd-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-    .sd-title{font-size:1rem;font-weight:700}
-    .sd-subtitle{font-size:.72rem;color:var(--mu);margin-top:2px}
-    .sv-tog{display:flex;background:var(--bg);border:1px solid var(--bd);border-radius:6px;overflow:hidden}
-    .sv-btn{padding:5px 12px;background:transparent;border:none;color:var(--mu);
-      font-size:.76rem;font-weight:600;cursor:pointer;transition:all .15s}
-    .sv-btn.active{background:var(--s2);color:var(--tx)}
-
-    /* shelf grid */
-    .sgrid{display:grid;gap:4px}
-    .sgcell{background:var(--s2);border:1px solid var(--bd);border-radius:5px;
-      min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;
-      cursor:pointer;transition:all .15s;padding:4px;position:relative}
-    .sgcell:hover{border-color:var(--ac);transform:scale(1.03)}
-    .sgcell.sh{background:transparent;border:none;font-size:.7rem;font-weight:700;
-      color:var(--mu);min-height:auto;cursor:default;transform:none!important}
-    .sgcell.cell-ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.3)}
-    .sgcell.cell-low{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.3)}
-    .sgcell.cell-out{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3)}
-    .sgcell .cid{font-size:.68rem;font-weight:700;color:var(--mu)}
-    .sgcell .cnt{font-size:.75rem;font-weight:700;color:var(--tx);margin-top:2px}
-    .sgcell .cnames{font-size:.6rem;color:var(--mu);text-align:center;line-height:1.3;
-      max-width:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-
-    /* iso svg container */
-    #sdIso{overflow-x:auto}
-    #sdIso svg{display:block;margin:0 auto}
+    /* ── MAP ── */
+    .map-wrap{display:flex;flex-direction:column;gap:10px}
+    .map-toolbar{display:flex;align-items:center;justify-content:space-between;
+      background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);
+      padding:7px 12px;gap:8px;flex-wrap:wrap}
+    .map-hint{font-size:.72rem;color:var(--mu)}
+    .map-svg-wrap{background:#0b1221;border:1px solid var(--bd);border-radius:var(--r);
+      overflow:hidden;touch-action:none;cursor:grab;user-select:none;line-height:0}
+    .map-svg-wrap.dragging{cursor:grabbing}
+    #mapSVG{width:100%;display:block;max-height:380px}
+    .shelf-g{transition:opacity 0.3s ease}
+    .shelf-info-panel{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:14px}
+    .si-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .si-title{font-size:1rem;font-weight:700}
+    .si-sub{font-size:.72rem;color:var(--mu);margin-top:2px}
+    .si-cell{background:var(--s2);border:1px solid var(--bd);border-radius:4px;
+      padding:5px 7px;font-size:.75rem;cursor:pointer;transition:all .15s;min-width:60px}
+    .si-cell:hover{border-color:var(--ac);background:var(--bd)}
+    .si-cell.ok{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.25)}
+    .si-cell.low{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.25)}
+    .si-cell.out{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.25)}
+    .si-cid{font-size:.64rem;font-weight:700;color:var(--mu)}
+    .si-cnt{font-weight:800;font-size:.82rem;color:var(--tx)}
+    .si-names{color:var(--mu);font-size:.64rem;margin-top:1px;white-space:nowrap;
+      overflow:hidden;text-overflow:ellipsis;max-width:110px}
 
     /* MODALS */
     .ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;
@@ -185,14 +165,13 @@
       border-bottom:1px solid var(--bd)}
     .isheet:last-child{border-bottom:none}
 
-    /* shelf config table in config modal */
-    .shelf-cfg-row{display:grid;grid-template-columns:1fr 80px 80px auto;gap:8px;
+    .shelf-cfg-row{display:grid;grid-template-columns:1fr 62px 62px 62px auto;gap:6px;
       align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)}
     .shelf-cfg-row:last-child{border-bottom:none}
     .shelf-cfg-row input{background:var(--bg);border:1px solid var(--bd);border-radius:5px;
       color:var(--tx);padding:5px 8px;font-size:.82rem;outline:none;width:100%}
     .shelf-cfg-row input:focus{border-color:var(--ac)}
-    .shelf-cfg-hdr{display:grid;grid-template-columns:1fr 80px 80px auto;gap:8px;
+    .shelf-cfg-hdr{display:grid;grid-template-columns:1fr 62px 62px 62px auto;gap:6px;
       padding:4px 0 6px;font-size:.68rem;font-weight:700;color:var(--mu);text-transform:uppercase;
       letter-spacing:.05em;border-bottom:1px solid var(--bd);margin-bottom:4px}
 
@@ -215,7 +194,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.1.0</span>
+    <span class="vbadge" id="vbadge">v2.2.0</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
 
@@ -233,7 +212,8 @@
 
   <div class="srch">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-    <input type="text" id="searchInput" placeholder="Buscar…" autocomplete="off" oninput="applyFilters()" />
+    <input type="text" id="searchInput" placeholder="Buscar…" autocomplete="off"
+           oninput="applyFilters();if(ui.view==='map')renderFloorPlan()" />
   </div>
 
   <div class="role-tog">
@@ -247,7 +227,7 @@
 <main>
   <div class="stats" id="statsBar"></div>
 
-  <!-- ── TABLE VIEW ─────────────────────────── -->
+  <!-- TABLE VIEW -->
   <div id="viewTable">
     <div class="filters">
       <span class="fl">Filtrar:</span>
@@ -264,32 +244,33 @@
     </div>
   </div>
 
-  <!-- ── MAP VIEW ───────────────────────────── -->
+  <!-- MAP VIEW -->
   <div id="viewMap" class="hidden map-wrap">
-
-    <div class="fp-container">
-      <div class="fp-title">Planta de bodega — haz clic en un estante</div>
-      <svg id="fpSVG" viewBox="0 0 860 400" xmlns="http://www.w3.org/2000/svg"></svg>
-    </div>
-
-    <div id="sdPanel" class="sd-panel hidden">
-      <div class="sd-header">
-        <div>
-          <div class="sd-title" id="sdTitle">Estante</div>
-          <div class="sd-subtitle" id="sdSub"></div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="sv-tog">
-            <button class="sv-btn active" data-mode="grid" onclick="setSV('grid')">⊞ Grid</button>
-            <button class="sv-btn"        data-mode="iso"  onclick="setSV('iso')">◈ 3D</button>
-          </div>
-          <button class="bic bsm" onclick="document.getElementById('sdPanel').classList.add('hidden')">✕</button>
-        </div>
+    <div class="map-toolbar">
+      <span class="map-hint">🖱 Rueda: zoom · Arrastrar: mover · Clic: seleccionar estante</span>
+      <div style="display:flex;gap:5px;align-items:center">
+        <button class="bic bsm" id="mapDeselectBtn" onclick="deselectShelf()" style="display:none">✕ Todos</button>
+        <button class="bic bsm" onclick="mapZoomBy(1.25)">＋</button>
+        <button class="bic bsm" onclick="mapZoomBy(1/1.25)">－</button>
+        <button class="bic bsm" onclick="resetMapView()">⊙ Reset</button>
       </div>
-      <div id="sdGrid"></div>
-      <div id="sdIso" class="hidden"></div>
     </div>
-
+    <div class="map-svg-wrap" id="mapWrap">
+      <svg id="mapSVG" xmlns="http://www.w3.org/2000/svg">
+        <g id="mapBg"></g>
+        <g id="mapContent"></g>
+      </svg>
+    </div>
+    <div id="shelfInfoPanel" class="shelf-info-panel hidden">
+      <div class="si-header">
+        <div>
+          <div class="si-title" id="siTitle"></div>
+          <div class="si-sub" id="siSub"></div>
+        </div>
+        <button class="bic bsm" onclick="deselectShelf()">✕</button>
+      </div>
+      <div id="siCells" style="overflow-x:auto"></div>
+    </div>
   </div>
 </main>
 
@@ -429,9 +410,10 @@
         POS de celda = <code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">ID-RowCol</code>
         &nbsp;ej: <code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">E1-A1</code>
         &nbsp;<code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">E2A-C3</code>
+        &nbsp;· Ancho = píxeles SVG del estante en el mapa
       </div>
       <div class="shelf-cfg-hdr">
-        <span>Etiqueta</span><span>Filas</span><span>Cols</span><span></span>
+        <span>Etiqueta</span><span>Filas</span><span>Cols</span><span>Ancho</span><span></span>
       </div>
       <div id="shelfCfgList"></div>
     </div>
@@ -464,38 +446,39 @@
 </div>
 
 <script>
-const APP_VERSION = 'v2.1.0';
+const APP_VERSION = 'v2.2.0';
 const SK = 'bodega_v2';
 
-// ── DEFAULT SHELF LAYOUT (matches drawing) ────────────────────────────────────
-// Physical order LEFT → RIGHT in the warehouse floor plan
-// Each shelf = one face (one side visible from its aisle)
 const DEFAULT_SHELVES = [
-  { id:'E3C', label:'Estante 3C', aisle:'C', rows:4, cols:5 },
-  { id:'E3B', label:'Estante 3B', aisle:'B', rows:4, cols:5 },
-  { id:'E2B', label:'Estante 2B', aisle:'B', rows:4, cols:5 },
-  { id:'E2A', label:'Estante 2A', aisle:'A', rows:4, cols:5 },
-  { id:'E1',  label:'Estante 1',  aisle:'A', rows:4, cols:5, wall:true },
+  { id:'E3C', label:'Estante 3C', aisle:'C', rows:4, cols:5, w:80 },
+  { id:'E3B', label:'Estante 3B', aisle:'B', rows:4, cols:5, w:80 },
+  { id:'E2B', label:'Estante 2B', aisle:'B', rows:4, cols:5, w:80 },
+  { id:'E2A', label:'Estante 2A', aisle:'A', rows:4, cols:5, w:80 },
+  { id:'E1',  label:'Estante 1',  aisle:'A', rows:4, cols:5, w:80, wall:true },
 ];
 
-// ── STATE ─────────────────────────────────────────────────────────────────────
 let S = {
   lastSaved: null,
   cfg: { pwdHash: btoa('obrist'), opCanAdd: false, shelves: null },
   items: []
 };
 
-// ── SESSION ───────────────────────────────────────────────────────────────────
 let ses = {
   role: sessionStorage.getItem('r') || 'visualizador',
   sa:   sessionStorage.getItem('sa') === '1'
 };
 
-// ── UI STATE ──────────────────────────────────────────────────────────────────
 let ui = { cat:'all', sc:'pos', sd:1, view:'table' };
-let currentShelf = null;
-let shelfViewMode = 'grid';
 let pendingImport = null;
+
+// ── MAP STATE ─────────────────────────────────────────────────────────────────
+let mapTx=0, mapTy=0, mapScale=1;
+let mapDragging=false, mapDragLast=null, mapMoved=false;
+let mapAnimFrame=null;
+let mapEventsReady=false;
+let currentShelf=null;
+
+const MAP_AISLE_W=78, MAP_SH=240, MAP_TOP=18, MAP_GAP=4;
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,5);
@@ -504,16 +487,11 @@ const n     = (v,d=0) => isNaN(parseInt(v)) ? d : parseInt(v);
 const ROWLABELS = 'ABCDEFGHIJ';
 
 function shelves() { return S.cfg.shelves || DEFAULT_SHELVES; }
-
 function shelfById(id) { return shelves().find(s=>s.id===id); }
-
 function rowLabels(sh) { return ROWLABELS.slice(0, sh.rows).split(''); }
-
 function cellId(shId, row, col) { return `${shId}-${row}${col}`; }
-
-function cellItems(shId, row, col) {
-  return S.items.filter(i => i.pos === cellId(shId, row, col));
-}
+function cellItems(shId, row, col) { return S.items.filter(i => i.pos === cellId(shId, row, col)); }
+function shelfW(sh) { return sh.w || sh.cols * 14; }
 
 function ef(item) {
   if (item.category === 'Herramientas') return item.cantidad || 0;
@@ -544,9 +522,9 @@ function shelfStatusColor(shId) {
     for (let c=1; c<=sh.cols; c++)
       all.push(...cellItems(shId, r, c));
   if (!all.length) return '#1e293b';
-  if (all.some(i=>ef(i)===0))        return 'rgba(239,68,68,.35)';
-  if (all.some(i=>(i.retirado||0)>0)) return 'rgba(245,158,11,.3)';
-  return 'rgba(34,197,94,.28)';
+  if (all.some(i=>ef(i)===0))        return 'rgba(239,68,68,.4)';
+  if (all.some(i=>(i.retirado||0)>0)) return 'rgba(245,158,11,.35)';
+  return 'rgba(34,197,94,.32)';
 }
 
 // ── PERSIST ───────────────────────────────────────────────────────────────────
@@ -591,7 +569,10 @@ function setView(v) {
   document.getElementById('viewTable').classList.toggle('hidden', v!=='table');
   document.getElementById('viewMap').classList.toggle('hidden',   v!=='map');
   document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
-  if (v==='map') renderFloorPlan();
+  if (v==='map') {
+    if (!mapEventsReady) { initMapEvents(); mapEventsReady=true; }
+    renderFloorPlan();
+  }
 }
 
 function setCat(c) {
@@ -713,249 +694,403 @@ function renderDatalist() {
   document.getElementById('posList').innerHTML=[...cellPOS,...extra].map(p=>`<option value="${esc(p)}">`).join('');
 }
 
-// ── FLOOR PLAN ────────────────────────────────────────────────────────────────
-// Physical layout (left→right): PC | E3C | E3B | PB | E2B | E2A | PA | E1 | wall
-// SVG viewBox: 860 × 400
-const FP_LAYOUT = [
-  { type:'aisle', label:'PASILLO C',  x:10,  w:125 },
-  { type:'shelf', id:'E3C',           x:135, w:62  },
-  { type:'shelf', id:'E3B',           x:197, w:62  },
-  { type:'aisle', label:'PASILLO B',  x:259, w:130 },
-  { type:'shelf', id:'E2B',           x:389, w:62  },
-  { type:'shelf', id:'E2A',           x:451, w:62  },
-  { type:'aisle', label:'PASILLO A',  x:513, w:125 },
-  { type:'shelf', id:'E1',            x:638, w:62  },
-  // right wall margin to 790
-];
-const FP_TOP=12, FP_BOT=335, FP_SH=FP_BOT-FP_TOP;
+// ── MAP LAYOUT ────────────────────────────────────────────────────────────────
+const KNOWN_ORDER = ['E3C','E3B','E2B','E2A','E1'];
+const AISLE_BETWEEN = { 'E3B':'PASILLO B', 'E2A':'PASILLO A' };
+const AISLE_FIRST = 'PASILLO C';
 
+function buildMapLayout() {
+  const sh = shelves(), byId = {};
+  sh.forEach(s => byId[s.id] = s);
+  const items = [];
+  let x = 16;
+
+  // First aisle (Pasillo C)
+  items.push({ type:'aisle', label:AISLE_FIRST, x, w:MAP_AISLE_W });
+  x += MAP_AISLE_W + MAP_GAP;
+
+  // Place shelves in known order, inserting aisles where defined
+  for (const id of KNOWN_ORDER) {
+    const s = byId[id]; if (!s) continue;
+    // Insert aisle before this shelf?
+    if (AISLE_BETWEEN[id]) {
+      items.push({ type:'aisle', label:AISLE_BETWEEN[id], x, w:MAP_AISLE_W });
+      x += MAP_AISLE_W + MAP_GAP;
+    }
+    const w = shelfW(s);
+    items.push({ type:'shelf', id, x, w, sh:s });
+    x += w + MAP_GAP;
+  }
+
+  // Extra shelves not in known order
+  for (const s of sh) {
+    if (!KNOWN_ORDER.includes(s.id)) {
+      const w = shelfW(s);
+      items.push({ type:'shelf', id:s.id, x, w, sh:s });
+      x += w + MAP_GAP;
+    }
+  }
+
+  const totalW = x + 16;
+  const totalH = MAP_TOP + MAP_SH + MAP_TOP + 36; // +36 for pasillo bottom strip
+  return { items, totalW, totalH };
+}
+
+// ── FLOOR PLAN RENDER ─────────────────────────────────────────────────────────
 function renderFloorPlan() {
-  const svg=document.getElementById('fpSVG');
-  let html='';
+  const svg = document.getElementById('mapSVG');
+  const mc  = document.getElementById('mapContent');
+  const mbg = document.getElementById('mapBg');
+  const { items, totalW, totalH } = buildMapLayout();
+  const srchQ = (document.getElementById('searchInput').value||'').toLowerCase();
 
-  // Floor
-  html+=`<rect x="0" y="0" width="860" height="400" fill="#0b1221"/>`;
-  // Warehouse outer wall
-  html+=`<rect x="8" y="8" width="792" height="392" fill="#1e293b" stroke="#334155" stroke-width="2" rx="5"/>`;
-  // Pasillo principal
-  html+=`<rect x="8" y="${FP_BOT}" width="792" height="${400-FP_BOT-2}" fill="#273449" stroke="#334155" stroke-width="1" rx="0"/>`;
-  html+=`<text x="404" y="${FP_BOT+(400-FP_BOT)/2+5}" text-anchor="middle" fill="#475569" font-size="12" font-weight="700" font-family="'Segoe UI',sans-serif">PASILLO PRINCIPAL</text>`;
-  // Entrance
-  html+=`<rect x="0" y="${FP_BOT-44}" width="11" height="44" fill="#3b82f6" rx="2"/>`;
-  html+=`<text x="18" y="${400-8}" fill="#3b82f6" font-size="10" font-weight="700" font-family="'Segoe UI',sans-serif">ENTRADA</text>`;
+  svg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
 
-  for (const item of FP_LAYOUT) {
-    const cx = item.x + item.w/2;
-    const cy = FP_TOP + FP_SH/2;
-    if (item.type==='aisle') {
-      html+=`<text x="${cx}" y="${cy+4}" text-anchor="middle" fill="#3d5068" font-size="11" font-weight="700"
-                   font-family="'Segoe UI',sans-serif"
-                   transform="rotate(-90,${cx},${cy})">${item.label}</text>`;
-    } else {
-      const color = shelfStatusColor(item.id);
-      const sh = shelfById(item.id);
-      const label = sh?.label || item.id;
-      const isSelected = currentShelf === item.id;
-      html+=`<rect x="${item.x}" y="${FP_TOP}" width="${item.w}" height="${FP_SH}"
-                   fill="${color}" stroke="${isSelected?'#3b82f6':'#334155'}"
-                   stroke-width="${isSelected?2.5:1.5}" rx="3"
-                   style="cursor:pointer" onclick="selectShelf('${item.id}')"
-                   onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'"/>`;
-      html+=`<text x="${cx}" y="${cy+4}" text-anchor="middle" fill="#f1f5f9"
-                   font-size="10" font-weight="700" font-family="'Segoe UI',sans-serif"
-                   transform="rotate(-90,${cx},${cy})" style="pointer-events:none">${esc(label)}</text>`;
-      // item count badge
-      const sh2=shelfById(item.id);
-      if (sh2) {
-        let cnt=0;
-        for(const r of rowLabels(sh2)) for(let c=1;c<=sh2.cols;c++) cnt+=cellItems(item.id,r,c).length;
-        if(cnt>0) {
-          html+=`<rect x="${item.x+item.w/2-11}" y="${FP_BOT-22}" width="22" height="16"
-                       fill="#334155" rx="3" style="pointer-events:none"/>`;
-          html+=`<text x="${cx}" y="${FP_BOT-11}" text-anchor="middle" fill="${color==='#1e293b'?'#64748b':'#f1f5f9'}"
-                       font-size="9" font-weight="700" font-family="'Segoe UI',sans-serif"
-                       style="pointer-events:none">${cnt}</text>`;
+  // Background elements (don't transform with zoom)
+  let bgHtml = `<rect width="${totalW}" height="${totalH}" fill="#0b1221"/>`;
+  // Pasillo principal strip
+  const pasilloY = MAP_TOP + MAP_SH + 2;
+  bgHtml += `<rect x="0" y="${pasilloY}" width="${totalW}" height="${totalH-pasilloY}"
+                   fill="#1a2744" stroke="#334155" stroke-width="0.5"/>`;
+  bgHtml += `<text x="${totalW/2}" y="${pasilloY+18}" text-anchor="middle"
+                   fill="#2d4a6e" font-size="11" font-weight="700" font-family="'Segoe UI',sans-serif">
+               PASILLO PRINCIPAL</text>`;
+  // Entrance marker
+  bgHtml += `<rect x="0" y="${MAP_TOP+MAP_SH-34}" width="8" height="34" fill="#3b82f6" rx="2"/>`;
+  bgHtml += `<text x="14" y="${pasilloY+10}" fill="#3b82f6" font-size="9" font-weight="700"
+                   font-family="'Segoe UI',sans-serif">ENTRADA</text>`;
+  // Legend
+  const lx=totalW-88, ly=10;
+  bgHtml+=`<rect x="${lx-2}" y="${ly-2}" width="88" height="74" fill="#0b1221" rx="4" opacity=".8"/>`;
+  bgHtml+=`<rect x="${lx+2}" y="${ly+4}" width="10" height="10" fill="#1e293b" stroke="#334155" rx="2"/>`;
+  bgHtml+=`<text x="${lx+16}" y="${ly+13}" fill="#475569" font-size="8" font-family="'Segoe UI',sans-serif">Sin ítems</text>`;
+  bgHtml+=`<rect x="${lx+2}" y="${ly+20}" width="10" height="10" fill="rgba(34,197,94,.32)" rx="2"/>`;
+  bgHtml+=`<text x="${lx+16}" y="${ly+29}" fill="#475569" font-size="8" font-family="'Segoe UI',sans-serif">OK</text>`;
+  bgHtml+=`<rect x="${lx+2}" y="${ly+36}" width="10" height="10" fill="rgba(245,158,11,.35)" rx="2"/>`;
+  bgHtml+=`<text x="${lx+16}" y="${ly+45}" fill="#475569" font-size="8" font-family="'Segoe UI',sans-serif">Con retiros</text>`;
+  bgHtml+=`<rect x="${lx+2}" y="${ly+52}" width="10" height="10" fill="rgba(239,68,68,.4)" rx="2"/>`;
+  bgHtml+=`<text x="${lx+16}" y="${ly+61}" fill="#475569" font-size="8" font-family="'Segoe UI',sans-serif">Sin stock</text>`;
+
+  mbg.innerHTML = bgHtml;
+
+  // Shelf items matched by search (for highlight in map)
+  const matchedShelves = new Set();
+  if (srchQ) {
+    for (const item of S.items) {
+      if ([item.name,item.brand,item.pos,item.condition,item.model,item.notes].join(' ').toLowerCase().includes(srchQ)) {
+        // find which shelf this item belongs to
+        for (const sh of shelves()) {
+          if (item.pos && item.pos.startsWith(sh.id+'-')) { matchedShelves.add(sh.id); break; }
         }
       }
     }
   }
 
-  // Legend
-  const lx=710, ly=20;
-  html+=`<text x="${lx}" y="${ly+10}" fill="#475569" font-size="9" font-family="'Segoe UI',sans-serif" font-weight="600">SIN ÍTEMS</text>`;
-  html+=`<rect x="${lx-14}" y="${ly+1}" width="12" height="12" fill="#1e293b" stroke="#334155" rx="2"/>`;
-  html+=`<rect x="${lx-14}" y="${ly+18}" width="12" height="12" fill="rgba(34,197,94,.28)" stroke="#334155" rx="2"/>`;
-  html+=`<text x="${lx}" y="${ly+27}" fill="#475569" font-size="9" font-family="'Segoe UI',sans-serif" font-weight="600">OK</text>`;
-  html+=`<rect x="${lx-14}" y="${ly+35}" width="12" height="12" fill="rgba(245,158,11,.3)" stroke="#334155" rx="2"/>`;
-  html+=`<text x="${lx}" y="${ly+44}" fill="#475569" font-size="9" font-family="'Segoe UI',sans-serif" font-weight="600">RETIROS</text>`;
-  html+=`<rect x="${lx-14}" y="${ly+52}" width="12" height="12" fill="rgba(239,68,68,.35)" stroke="#334155" rx="2"/>`;
-  html+=`<text x="${lx}" y="${ly+61}" fill="#475569" font-size="9" font-family="'Segoe UI',sans-serif" font-weight="600">SIN STOCK</text>`;
+  let html = '';
+  for (const item of items) {
+    const cx = item.x + item.w / 2;
+    const cy = MAP_TOP + MAP_SH / 2;
+    if (item.type === 'aisle') {
+      html += `<text x="${cx}" y="${cy+4}" text-anchor="middle" fill="#2d4a6e"
+                     font-size="10" font-weight="700" font-family="'Segoe UI',sans-serif"
+                     transform="rotate(-90,${cx},${cy})">${esc(item.label)}</text>`;
+    } else {
+      const sh = item.sh;
+      const color = shelfStatusColor(item.id);
+      const isSelected = currentShelf === item.id;
+      const isSearchMatch = srchQ ? matchedShelves.has(item.id) : true;
+      // Opacity: if shelf selected → others fade; if search → non-matches fade
+      let opacity = '1';
+      if (currentShelf && !isSelected) opacity = '0.1';
+      else if (srchQ && !isSearchMatch && !isSelected) opacity = '0.15';
 
-  svg.innerHTML=html;
+      const rows = rowLabels(sh);
+      const cellH = MAP_SH / sh.rows;
+
+      html += `<g class="shelf-g" data-id="${esc(item.id)}"
+                  data-x="${item.x}" data-w="${item.w}"
+                  style="opacity:${opacity}"
+                  onclick="handleShelfClick(event,'${esc(item.id)}')">`;
+
+      // Main rect
+      html += `<rect x="${item.x}" y="${MAP_TOP}" width="${item.w}" height="${MAP_SH}"
+                     fill="${color}" stroke="${isSelected?'#3b82f6':'#334155'}"
+                     stroke-width="${isSelected?2.5:1}" rx="3" style="cursor:pointer"/>`;
+
+      // Row dividers and labels
+      for (let r = 1; r < sh.rows; r++) {
+        html += `<line x1="${item.x}" y1="${MAP_TOP + r*cellH}"
+                       x2="${item.x+item.w}" y2="${MAP_TOP + r*cellH}"
+                       stroke="#334155" stroke-width="0.6" style="pointer-events:none"/>`;
+      }
+      for (let r = 0; r < sh.rows; r++) {
+        html += `<text x="${item.x+4}" y="${MAP_TOP + r*cellH + 9}"
+                       fill="#475569" font-size="7" font-weight="600"
+                       font-family="'Segoe UI',sans-serif" style="pointer-events:none">${rows[r]}</text>`;
+      }
+
+      // Shelf label (rotated)
+      html += `<text x="${cx}" y="${cy+4}" text-anchor="middle" fill="#e2e8f0"
+                     font-size="9" font-weight="700" font-family="'Segoe UI',sans-serif"
+                     transform="rotate(-90,${cx},${cy})" style="pointer-events:none">${esc(sh.label||item.id)}</text>`;
+
+      // Item count badge
+      let cnt = 0;
+      for (const r of rows) for (let c=1; c<=sh.cols; c++) cnt += cellItems(item.id,r,c).length;
+      if (cnt > 0) {
+        const bw = Math.max(18, String(cnt).length * 7 + 8);
+        html += `<rect x="${cx-bw/2}" y="${MAP_TOP+MAP_SH-16}" width="${bw}" height="13"
+                       fill="#0f172a" rx="3" style="pointer-events:none"/>`;
+        html += `<text x="${cx}" y="${MAP_TOP+MAP_SH-6}" text-anchor="middle"
+                       fill="#94a3b8" font-size="8" font-weight="700"
+                       font-family="'Segoe UI',sans-serif" style="pointer-events:none">${cnt}</text>`;
+      }
+
+      // Selected highlight ring
+      if (isSelected) {
+        html += `<rect x="${item.x-1}" y="${MAP_TOP-1}" width="${item.w+2}" height="${MAP_SH+2}"
+                       fill="none" stroke="#3b82f6" stroke-width="2" rx="4"
+                       style="pointer-events:none"/>`;
+      }
+
+      html += `</g>`;
+    }
+  }
+
+  mc.innerHTML = html;
+  applyMapTransform();
+}
+
+// ── MAP TRANSFORM ─────────────────────────────────────────────────────────────
+function applyMapTransform() {
+  const mc = document.getElementById('mapContent');
+  if (mc) mc.setAttribute('transform', `translate(${mapTx},${mapTy}) scale(${mapScale})`);
+}
+
+function mapZoomBy(factor, pivotX, pivotY) {
+  const svg = document.getElementById('mapSVG');
+  const vb = svg.viewBox.baseVal;
+  if (pivotX === undefined) { pivotX = vb.x + vb.width/2; pivotY = vb.y + vb.height/2; }
+  const cx = (pivotX - mapTx) / mapScale;
+  const cy = (pivotY - mapTy) / mapScale;
+  mapScale = Math.max(0.25, Math.min(10, mapScale * factor));
+  mapTx = pivotX - cx * mapScale;
+  mapTy = pivotY - cy * mapScale;
+  if (mapAnimFrame) { cancelAnimationFrame(mapAnimFrame); mapAnimFrame=null; }
+  applyMapTransform();
+}
+
+function resetMapView() {
+  animateMapTo(0, 0, 1, 350);
+}
+
+function animateMapTo(targetTx, targetTy, targetScale, duration) {
+  if (mapAnimFrame) cancelAnimationFrame(mapAnimFrame);
+  const startTx=mapTx, startTy=mapTy, startScale=mapScale;
+  const t0 = performance.now();
+  function step(now) {
+    const p = Math.min(1, (now - t0) / duration);
+    const e = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p+2,2)/2;
+    mapTx = startTx + (targetTx-startTx)*e;
+    mapTy = startTy + (targetTy-startTy)*e;
+    mapScale = startScale + (targetScale-startScale)*e;
+    applyMapTransform();
+    if (p < 1) mapAnimFrame = requestAnimationFrame(step);
+    else mapAnimFrame = null;
+  }
+  mapAnimFrame = requestAnimationFrame(step);
 }
 
 // ── SHELF SELECTION ───────────────────────────────────────────────────────────
+function handleShelfClick(e, id) {
+  if (mapMoved) return; // ignore drag-end as click
+  if (currentShelf === id) { deselectShelf(); return; }
+  selectShelf(id);
+}
+
 function selectShelf(id) {
-  currentShelf=id;
-  const sh=shelfById(id); if (!sh) return;
-  document.getElementById('sdPanel').classList.remove('hidden');
-  document.getElementById('sdTitle').textContent=sh.label||id;
+  currentShelf = id;
+  const sh = shelfById(id); if (!sh) return;
+  document.getElementById('mapDeselectBtn').style.display = '';
 
-  let cnt=0;
-  for(const r of rowLabels(sh)) for(let c=1;c<=sh.cols;c++) cnt+=cellItems(id,r,c).length;
-  document.getElementById('sdSub').textContent=`${sh.rows} filas × ${sh.cols} columnas · ${cnt} ítem(s)`;
+  // Update opacities
+  document.querySelectorAll('.shelf-g').forEach(g => {
+    const isThis = g.dataset.id === id;
+    g.style.opacity = isThis ? '1' : '0.1';
+    const rect = g.querySelector('rect');
+    if (rect) {
+      rect.setAttribute('stroke', isThis ? '#3b82f6' : '#334155');
+      rect.setAttribute('stroke-width', isThis ? '2.5' : '1');
+    }
+  });
 
-  setSV(shelfViewMode);
-  renderFloorPlan(); // re-render to show selection highlight
+  // Animate zoom to shelf
+  const gEl = document.querySelector(`.shelf-g[data-id="${id}"]`);
+  if (gEl) {
+    const sx = parseFloat(gEl.dataset.x);
+    const sw = parseFloat(gEl.dataset.w);
+    const svg = document.getElementById('mapSVG');
+    const vb = svg.viewBox.baseVal;
+    const targetScale = Math.min(4, (vb.width * 0.6) / sw);
+    const shCX = sx + sw / 2;
+    const shCY = MAP_TOP + MAP_SH / 2;
+    const targetTx = vb.width/2 - shCX * targetScale;
+    const targetTy = vb.height/2 - shCY * targetScale;
+    animateMapTo(targetTx, targetTy, targetScale, 380);
+  }
+
+  renderShelfInfoPanel(id);
 }
 
-function setSV(mode) {
-  shelfViewMode=mode;
-  document.getElementById('sdGrid').classList.toggle('hidden',mode!=='grid');
-  document.getElementById('sdIso').classList.toggle('hidden', mode!=='iso');
-  document.querySelectorAll('.sv-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
-  if (!currentShelf) return;
-  if (mode==='grid') renderShelfGrid(currentShelf);
-  else               renderShelfIso(currentShelf);
+function deselectShelf() {
+  currentShelf = null;
+  document.getElementById('mapDeselectBtn').style.display = 'none';
+  document.getElementById('shelfInfoPanel').classList.add('hidden');
+  document.querySelectorAll('.shelf-g').forEach(g => {
+    g.style.opacity = '1';
+    const rect = g.querySelector('rect');
+    if (rect) { rect.setAttribute('stroke','#334155'); rect.setAttribute('stroke-width','1'); }
+  });
+  animateMapTo(0, 0, 1, 350);
 }
 
-// ── SHELF GRID VIEW ───────────────────────────────────────────────────────────
-function renderShelfGrid(shId) {
-  const sh=shelfById(shId); if (!sh) return;
-  const rows=rowLabels(sh);
-  const sa=ses.sa, isOp=ses.role==='operador';
+// ── SHELF INFO PANEL ──────────────────────────────────────────────────────────
+function renderShelfInfoPanel(shId) {
+  const sh = shelfById(shId); if (!sh) return;
+  const rows = rowLabels(sh);
+  let cnt = 0;
+  for (const r of rows) for (let c=1; c<=sh.cols; c++) cnt += cellItems(shId,r,c).length;
 
-  let html=`<div class="sgrid" style="grid-template-columns:28px repeat(${sh.cols},1fr);gap:4px">`;
-  // col headers
-  html+='<div></div>';
-  for(let c=1;c<=sh.cols;c++) html+=`<div class="sgcell sh">${c}</div>`;
+  document.getElementById('siTitle').textContent = sh.label || shId;
+  document.getElementById('siSub').textContent = `${sh.rows} filas × ${sh.cols} columnas · ${cnt} ítem(s)`;
 
-  for(const row of rows) {
-    html+=`<div class="sgcell sh">${row}</div>`;
-    for(let c=1;c<=sh.cols;c++) {
-      const cid=cellId(shId,row,c);
-      const items=cellItems(shId,row,c);
-      const hasOut=items.some(i=>ef(i)===0);
-      const hasRet=items.some(i=>(i.retirado||0)>0);
-      let cls=items.length?hasOut?'cell-out':hasRet?'cell-low':'cell-ok':'';
+  let html = `<div style="display:grid;grid-template-columns:24px repeat(${sh.cols},1fr);gap:4px;min-width:${sh.cols*70+30}px">`;
+  // Header row
+  html += '<div></div>';
+  for (let c=1; c<=sh.cols; c++)
+    html += `<div style="text-align:center;font-size:.66rem;font-weight:700;color:var(--mu);padding:2px">${c}</div>`;
 
-      const names=items.slice(0,2).map(i=>esc(i.name)).join(', ')+(items.length>2?`…`:'');
-      const total=items.reduce((s,i)=>s+ef(i),0);
-
-      let addBtn='';
-      if ((sa||(isOp&&S.cfg.opCanAdd)) && items.length===0) {
-        addBtn=`<div style="font-size:.7rem;color:var(--mu);margin-top:3px">vacío</div>`;
-      }
-
-      html+=`<div class="sgcell ${cls}" onclick="clickCell('${cid}')">
-        <div class="cid">${row}${c}</div>
-        ${items.length>0?`<div class="cnt">${total}</div><div class="cnames">${names}</div>`:addBtn}
+  for (const row of rows) {
+    html += `<div style="display:flex;align-items:center;font-size:.66rem;font-weight:700;color:var(--mu)">${row}</div>`;
+    for (let c=1; c<=sh.cols; c++) {
+      const cid = cellId(shId, row, c);
+      const its = cellItems(shId, row, c);
+      const hasOut = its.length > 0 && its.some(i=>ef(i)===0);
+      const hasRet = its.some(i=>(i.retirado||0)>0);
+      const cls = its.length > 0 ? (hasOut?'out':hasRet?'low':'ok') : '';
+      const total = its.reduce((s,i)=>s+ef(i),0);
+      const names = its.slice(0,2).map(i=>esc(i.name)).join(', ')+(its.length>2?'…':'');
+      html += `<div class="si-cell ${cls}" onclick="clickCell('${cid}')">
+        <div class="si-cid">${row}${c}</div>
+        ${its.length>0
+          ?`<div class="si-cnt">${total}</div><div class="si-names">${names}</div>`
+          :`<div style="font-size:.62rem;color:var(--mu)">vacío</div>`}
       </div>`;
     }
   }
-  html+='</div>';
+  html += '</div>';
 
-  if (sa||isOp) {
-    html+=`<div style="margin-top:10px;font-size:.72rem;color:var(--mu)">
-      Haz clic en una celda para filtrar la lista o agregar ítems. POS de esta celda: <strong style="color:var(--ac)">${shId}-A1…</strong>
-    </div>`;
-  }
-  document.getElementById('sdGrid').innerHTML=html;
+  document.getElementById('siCells').innerHTML = html;
+  document.getElementById('shelfInfoPanel').classList.remove('hidden');
 }
 
-// ── SHELF ISOMETRIC VIEW ──────────────────────────────────────────────────────
-function renderShelfIso(shId) {
-  const sh=shelfById(shId); if (!sh) return;
-  const rows=rowLabels(sh);
+// ── MAP EVENTS ────────────────────────────────────────────────────────────────
+function initMapEvents() {
+  const svg = document.getElementById('mapSVG');
+  const wrap = document.getElementById('mapWrap');
 
-  const CW=66, CH=58;      // cell width / height
-  const DX=30, DY=15;      // iso depth offset
-  const MARGIN_L=38, MARGIN_T=DY+16, MARGIN_B=18, MARGIN_R=DX+10;
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.15 : 1/1.15;
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    const sp = pt.matrixTransform(svg.getScreenCTM().inverse());
+    mapZoomBy(factor, sp.x, sp.y);
+  }, { passive: false });
 
-  const W=sh.cols*CW, H=sh.rows*CH;
-  const svgW=MARGIN_L+W+MARGIN_R, svgH=MARGIN_T+H+MARGIN_B;
+  svg.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    mapDragging = true; mapMoved = false;
+    mapDragLast = { x: e.clientX, y: e.clientY };
+    wrap.classList.add('dragging');
+    e.preventDefault();
+  });
 
-  const OX=MARGIN_L, OY=MARGIN_T; // front-face top-left corner
+  window.addEventListener('mousemove', e => {
+    if (!mapDragging) return;
+    const dx = e.clientX - mapDragLast.x;
+    const dy = e.clientY - mapDragLast.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) mapMoved = true;
+    mapDragLast = { x: e.clientX, y: e.clientY };
+    const ctm = svg.getScreenCTM();
+    mapTx += dx / ctm.a;
+    mapTy += dy / ctm.d;
+    if (mapAnimFrame) { cancelAnimationFrame(mapAnimFrame); mapAnimFrame = null; }
+    applyMapTransform();
+  });
 
-  let paths='', labels='';
+  window.addEventListener('mouseup', () => {
+    mapDragging = false;
+    wrap.classList.remove('dragging');
+  });
 
-  // Right face (side)
-  paths+=`<path d="M${OX+W},${OY} L${OX+W+DX},${OY-DY} L${OX+W+DX},${OY+H-DY} L${OX+W},${OY+H} Z"
-                fill="#111827" stroke="#334155" stroke-width="1.5"/>`;
-  // Top face
-  paths+=`<path d="M${OX},${OY} L${OX+DX},${OY-DY} L${OX+W+DX},${OY-DY} L${OX+W},${OY} Z"
-                fill="#273449" stroke="#334155" stroke-width="1.5"/>`;
-
-  // Col labels on top-face slant
-  for(let c=0;c<sh.cols;c++) {
-    const tx=OX+c*CW+CW/2;
-    labels+=`<text x="${tx}" y="${OY-4}" text-anchor="middle" fill="#475569" font-size="10" font-weight="600">${c+1}</text>`;
-  }
-
-  // Front face cells
-  for(let r=0;r<sh.rows;r++) {
-    const row=rows[r];
-    // Row label
-    labels+=`<text x="${OX-6}" y="${OY+r*CH+CH/2+4}" text-anchor="end" fill="#64748b" font-size="12" font-weight="700">${row}</text>`;
-
-    for(let c=0;c<sh.cols;c++) {
-      const cid=cellId(shId,row,c+1);
-      const items=cellItems(shId,row,c+1);
-      const efv=items.reduce((s,i)=>s+ef(i),0);
-      const hasOut=items.length>0&&items.every(i=>ef(i)===0);
-      const hasRet=items.some(i=>(i.retirado||0)>0);
-
-      let fill='#162032', stroke='#253347', textColor='#253347';
-      if(items.length>0) {
-        if(hasOut)      { fill='#450a0a'; stroke='#ef4444'; textColor='rgba(255,255,255,.6)'; }
-        else if(hasRet) { fill='#431407'; stroke='#f59e0b'; textColor='rgba(255,255,255,.7)'; }
-        else            { fill='#052e16'; stroke='#22c55e'; textColor='rgba(255,255,255,.8)'; }
-      }
-
-      const x=OX+c*CW+1, y=OY+r*CH+1;
-      paths+=`<rect x="${x}" y="${y}" width="${CW-2}" height="${CH-2}"
-                    fill="${fill}" stroke="${stroke}" stroke-width="1.5" rx="3"
-                    onclick="clickCell('${cid}')" style="cursor:pointer"/>`;
-      // cell label
-      paths+=`<text x="${x+CW/2}" y="${y+CH/2-(items.length?6:2)}" text-anchor="middle"
-                    fill="${textColor}" font-size="11" font-weight="700" style="pointer-events:none">${row}${c+1}</text>`;
-      if(items.length>0) {
-        paths+=`<text x="${x+CW/2}" y="${y+CH/2+9}" text-anchor="middle"
-                      fill="${textColor}" font-size="9" style="pointer-events:none">${efv} u · ${items.length}it</text>`;
-      }
+  // Touch: pan + pinch zoom
+  let lastTouchDist = null;
+  svg.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+      mapDragging = true; mapMoved = false;
+      mapDragLast = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else if (e.touches.length === 2) {
+      mapDragging = false;
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouchDist = Math.hypot(dx, dy);
     }
-  }
+    e.preventDefault();
+  }, { passive: false });
 
-  // Frame border over cells
-  paths+=`<rect x="${OX}" y="${OY}" width="${W}" height="${H}" fill="none" stroke="#334155" stroke-width="2"/>`;
+  svg.addEventListener('touchmove', e => {
+    if (e.touches.length === 1 && mapDragging) {
+      const dx = e.touches[0].clientX - mapDragLast.x;
+      const dy = e.touches[0].clientY - mapDragLast.y;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) mapMoved = true;
+      mapDragLast = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      const ctm = svg.getScreenCTM();
+      mapTx += dx / ctm.a; mapTy += dy / ctm.d;
+      if (mapAnimFrame) { cancelAnimationFrame(mapAnimFrame); mapAnimFrame=null; }
+      applyMapTransform();
+    } else if (e.touches.length === 2 && lastTouchDist) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      const pt = svg.createSVGPoint(); pt.x = mx; pt.y = my;
+      const sp = pt.matrixTransform(svg.getScreenCTM().inverse());
+      mapZoomBy(dist / lastTouchDist, sp.x, sp.y);
+      lastTouchDist = dist;
+    }
+    e.preventDefault();
+  }, { passive: false });
 
-  document.getElementById('sdIso').innerHTML=
-    `<svg viewBox="0 0 ${svgW} ${svgH}" width="100%" style="max-height:360px;overflow:visible" xmlns="http://www.w3.org/2000/svg">
-      <rect width="${svgW}" height="${svgH}" fill="transparent"/>
-      ${paths}${labels}
-    </svg>`;
+  svg.addEventListener('touchend', () => { mapDragging = false; lastTouchDist = null; });
 }
 
 // ── CELL CLICK ────────────────────────────────────────────────────────────────
 function clickCell(cid) {
   setView('table');
-  // Pre-fill POS filter
-  document.getElementById('fPos').value=cid;
+  document.getElementById('fPos').value = cid;
   applyFilters();
-  // If SA or permitted operator, pre-fill POS in add form
-  if ((ses.sa||(ses.role==='operador'&&S.cfg.opCanAdd)) && cellItems2(cid).length===0) {
+  if ((ses.sa || (ses.role==='operador' && S.cfg.opCanAdd)) && S.items.filter(i=>i.pos===cid).length===0) {
     openAdd();
-    document.getElementById('iPos').value=cid;
+    document.getElementById('iPos').value = cid;
   }
 }
-
-function cellItems2(cid) { return S.items.filter(i=>i.pos===cid); }
 
 // ── MODALS ────────────────────────────────────────────────────────────────────
 function openOv(id)  { document.getElementById(id).classList.add('open'); }
 function closeOv(id) { document.getElementById(id).classList.remove('open'); }
 
-// Secret: 5 clicks on version badge
 let sc=0,st=null;
 document.getElementById('vbadge').addEventListener('click',()=>{
   if(ses.sa) return;
@@ -1031,14 +1166,14 @@ function saveItem() {
   if(id){const i=S.items.findIndex(x=>x.id===id);if(i!==-1)S.items[i]=it;}
   else S.items.push(it);
   save(); closeOv('ovItem'); render();
-  if(ui.view==='map') renderFloorPlan();
+  if(ui.view==='map') { renderFloorPlan(); if(currentShelf) renderShelfInfoPanel(currentShelf); }
 }
 
 function delItem(id) {
   if(!confirm('¿Eliminar este ítem?'))return;
   S.items=S.items.filter(i=>i.id!==id);
   save(); render();
-  if(ui.view==='map') renderFloorPlan();
+  if(ui.view==='map') { renderFloorPlan(); if(currentShelf) renderShelfInfoPanel(currentShelf); }
 }
 
 // ── OPERATOR MOVEMENTS ────────────────────────────────────────────────────────
@@ -1068,7 +1203,7 @@ function saveMov() {
   if(type==='entrada'){it.bodega=(it.bodega||0)+qty;}
   else{if(qty>ef(it)){alert(`Stock insuficiente. Disponible: ${ef(it)}`);return;}it.retirado=(it.retirado||0)+qty;}
   save(); closeOv('ovMov'); renderTable(); renderStats();
-  if(ui.view==='map'&&currentShelf) { renderFloorPlan(); setSV(shelfViewMode); }
+  if(ui.view==='map') { renderFloorPlan(); if(currentShelf) renderShelfInfoPanel(currentShelf); }
 }
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
@@ -1093,6 +1228,8 @@ function renderShelfCfg() {
              onchange="updateShelf(${idx},'rows',+this.value)" />
       <input type="number" value="${s.cols}" min="1" max="10"
              onchange="updateShelf(${idx},'cols',+this.value)" />
+      <input type="number" value="${s.w||s.cols*14}" min="30" max="400" title="Ancho en mapa"
+             onchange="updateShelf(${idx},'w',+this.value)" />
       <span style="font-size:.7rem;color:var(--mu)">${s.id}</span>
     </div>`).join('');
 }
@@ -1101,8 +1238,8 @@ function updateShelf(idx,field,val) {
   if(!S.cfg.shelves) S.cfg.shelves=JSON.parse(JSON.stringify(DEFAULT_SHELVES));
   S.cfg.shelves[idx][field]=val;
   save();
-  if(currentShelf) { setSV(shelfViewMode); }
-  renderFloorPlan();
+  if(ui.view==='map') renderFloorPlan();
+  if(currentShelf) renderShelfInfoPanel(currentShelf);
 }
 
 function changePwd() {
