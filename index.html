@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.5.0</title>
+  <title>Inventario v2.5.1</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
   <script type="module">
@@ -157,7 +157,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.5.0</span>
+    <span class="vbadge" id="vbadge">v2.5.1</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -328,7 +328,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.5.0';
+const APP_VERSION = 'v2.5.1';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -513,7 +513,8 @@ function cellStatusHex(its) {
 
 function initOrRefreshMap() {
   if(!window._threeReady) { window._onThreeReady = initOrRefreshMap; return; }
-  if(!m3) initMap3D();
+  // One rAF so the map container is fully laid out before querying dimensions
+  if(!m3) requestAnimationFrame(initMap3D);
   else refreshMap3D();
 }
 
@@ -535,18 +536,21 @@ function initMap3D() {
   const scene = new T.Scene();
   scene.fog = new T.FogExp2(0x07111f, 0.007);
 
-  const camera = new T.PerspectiveCamera(52, W/H, 0.1, 300);
+  const camera = new T.PerspectiveCamera(55, W/H, 0.1, 300);
   const sh0 = shelfById('E3C') || shelves()[0];
   const MID_Z = SHELF_Z - ((sh0?.cols||5) * COL_DEPTH / 2);
-  camera.position.set(TOTAL_X/2, 10, 8);
+  // Initial view: standing at Pasillo B entrance, looking into the warehouse
+  // E3B face (left) and E2B face (right) are immediately visible
+  camera.position.set(5.85, 3.5, 10);
 
   const controls = new OC(camera, renderer.domElement);
-  controls.target.set(TOTAL_X/2, 2, MID_Z);
+  controls.target.set(5.85, 1.5, MID_Z);
   controls.enableDamping = true;
   controls.dampingFactor = 0.07;
-  controls.minDistance = 2;
-  controls.maxDistance = 60;
-  controls.maxPolarAngle = Math.PI/2 - 0.01;
+  controls.minDistance = 1.5;
+  controls.maxDistance = 40;
+  controls.minPolarAngle = 0.05;
+  controls.maxPolarAngle = Math.PI * 0.82;
   controls.update();
 
   // Lighting
@@ -588,21 +592,16 @@ function initMap3D() {
     scene.add(new T.Line(new T.BufferGeometry().setFromPoints(pts), lineMat));
   }
 
-  // Back wall
-  const wallMat = new T.MeshLambertMaterial({color:0x1a3050});
-  const bw = new T.Mesh(new T.PlaneGeometry(TOTAL_X+4, 14), wallMat);
-  bw.position.set(TOTAL_X/2, 7, SHELF_Z-8.5); bw.receiveShadow = true;
+  // Back wall (far end of warehouse)
+  const wallMat = new T.MeshLambertMaterial({color:0x1e3554});
+  const bw = new T.Mesh(new T.PlaneGeometry(TOTAL_X+4, 8), wallMat);
+  bw.position.set(TOTAL_X/2, 4, SHELF_Z-8.6); bw.receiveShadow = true;
   scene.add(bw);
-
-  // Side wall behind E1
-  const swMat = new T.MeshLambertMaterial({color:0x16283e});
-  const sw = new T.Mesh(new T.PlaneGeometry(14, 14), swMat);
-  sw.rotation.y = -Math.PI/2; sw.position.set(TOTAL_X+0.35, 7, MID_Z);
-  scene.add(sw);
-  // Left wall (Pasillo C side)
-  const lw = new T.Mesh(new T.PlaneGeometry(14, 14), swMat);
-  lw.rotation.y = Math.PI/2; lw.position.set(-0.35, 7, MID_Z);
-  scene.add(lw);
+  // Right side wall (behind E1)
+  const swMat = new T.MeshLambertMaterial({color:0x19304a});
+  const rw = new T.Mesh(new T.PlaneGeometry(10, 8), swMat);
+  rw.rotation.y = -Math.PI/2; rw.position.set(TOTAL_X+0.3, 4, MID_Z);
+  scene.add(rw);
 
   // Raycasting
   const raycaster = new T.Raycaster();
@@ -827,8 +826,8 @@ function selectShelf(id) {
     const def = FACE_DEFS.find(d=>d.id===id);
     if(def) {
       const midZ = SHELF_Z - (sh.cols * COL_DEPTH / 2);
-      // Stand in the aisle, look across at the shelf face
-      animCam({x:def.aisleX, y:2.5, z:midZ}, {x:def.faceX, y:2.0, z:midZ});
+      // Stand in the aisle slightly toward entrance, look at the whole shelf face
+      animCam({x:def.aisleX, y:2.8, z:midZ+2}, {x:def.faceX, y:1.8, z:midZ});
     }
   }
   renderShelfInfoPanel(id);
@@ -843,7 +842,7 @@ function deselectShelf() {
     buildShelves3D();
     const sh0=shelfById('E3C')||shelves()[0];
     const midZ=SHELF_Z-((sh0?.cols||5)*COL_DEPTH/2);
-    animCam({x:TOTAL_X/2,y:10,z:8},{x:TOTAL_X/2,y:2,z:midZ});
+    animCam({x:5.85,y:3.5,z:10},{x:5.85,y:1.5,z:midZ});
   }
 }
 
@@ -855,7 +854,7 @@ function resetCam() {
   buildShelves3D();
   const sh0=shelfById('E3C')||shelves()[0];
   const midZ=SHELF_Z-((sh0?.cols||5)*COL_DEPTH/2);
-  animCam({x:TOTAL_X/2,y:10,z:8},{x:TOTAL_X/2,y:2,z:midZ});
+  animCam({x:5.85,y:3.5,z:10},{x:5.85,y:1.5,z:midZ});
 }
 
 // Shelf info panel
