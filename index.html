@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.7.3</title>
+  <title>Inventario v2.7.4</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -142,7 +142,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.7.3</span>
+    <span class="vbadge" id="vbadge">v2.7.4</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -286,7 +286,7 @@
     <div class="csec">
       <h3>Distribución de estantes</h3>
       <div style="font-size:.75rem;color:var(--mu);margin-bottom:8px">
-        POS = <code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">ID-FilaCol</code> ej: <code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">E1-A1</code> · Ancho = unidades 3D (afecta mapa)
+        POS = <code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">ID-FilaCol</code> · El <b>ID Prefijo</b> debe coincidir con el prefijo en las posiciones de tus ítems (antes del guion)
       </div>
       <div class="shelf-cfg-hdr"><span title="Prefijo usado en posiciones (ej: E1-A3)">ID Prefijo</span><span>Etiqueta</span><span>Filas</span><span>Cols</span><span>Ancho</span></div>
       <div id="shelfCfgList"></div>
@@ -300,6 +300,15 @@
       <div style="margin-top:8px;display:flex;align-items:center;gap:8px"><button class="bs bsm" onclick="changePwd()">Cambiar</button><span id="pwdMsg" style="font-size:.76rem"></span></div>
     </div>
     <div class="csec">
+      <h3>Diagnóstico de posiciones</h3>
+      <div style="font-size:.75rem;color:var(--mu);margin-bottom:8px">Prefijos usados en tus ítems vs IDs de estantes configurados. Verde = mapeado, amarillo = sin mapa.</div>
+      <div id="posDiagOut" style="margin-bottom:8px"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="bs bsm" onclick="posDiagnostic()">🔍 Ver diagnóstico</button>
+        <button class="bp bsm" onclick="runAutoRemap()" title="Intenta igualar los IDs de estantes con los prefijos de tus ítems">⚡ Auto-mapear prefijos</button>
+      </div>
+    </div>
+    <div class="csec">
       <h3>Datos</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="bs bsm" onclick="backupJSON()">💾 Backup JSON</button><button class="bd2 bsm" onclick="clearAll()">🗑 Borrar todo</button></div>
     </div>
@@ -310,7 +319,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.7.3';
+const APP_VERSION = 'v2.7.4';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -939,8 +948,60 @@ function applyTheme(name) {
 function chkOnline(){document.getElementById('offlineBanner').classList.toggle('hidden',navigator.onLine);syncTxt();}
 window.addEventListener('online',chkOnline);window.addEventListener('offline',chkOnline);
 
+// Auto-remap shelf IDs so map matches whatever pos prefix the items actually use.
+// Matching rule: trailing number+letter of prefix must equal trailing number+letter of shelf label.
+// Example: item pos "E1-A3" → prefix "E1" → suffix "1" → matches shelf labeled "Estante 1".
+function tryAutoRemap() {
+  const sh = shelves();
+  const knownIds = new Set(sh.map(s=>s.id));
+  const pc = {};
+  for(const it of S.items){if(!it.pos)continue;const p=it.pos.split('-')[0].trim();if(p)pc[p]=(pc[p]||0)+1;}
+  const unmapped = Object.keys(pc).filter(p=>!knownIds.has(p));
+  if(!unmapped.length) return;
+  if(!S.cfg.shelves) S.cfg.shelves=JSON.parse(JSON.stringify(DEFAULT_SHELVES));
+  const suffix = s=>{const m=String(s||'').match(/(\d+[A-Z]*)(?:\s*)$/i);return m?m[1].toUpperCase():'';};
+  const byLabel = {};
+  S.cfg.shelves.forEach((s,i)=>{const k=suffix(s.label||s.id);if(k)byLabel[k]=i;});
+  let changed=false;
+  for(const prefix of unmapped){
+    const suf=suffix(prefix);
+    if(!suf) continue;
+    const idx=byLabel[suf]??-1;
+    if(idx<0) continue;
+    if(S.cfg.shelves.some((s,i)=>i!==idx&&s.id===prefix)) continue; // conflict
+    const oldId=S.cfg.shelves[idx].id;
+    if(oldId===prefix) continue;
+    S.cfg.shelves[idx].id=prefix;
+    S.items.forEach(it=>{if(it.pos?.startsWith(oldId+'-'))it.pos=prefix+'-'+it.pos.slice(oldId.length+1);});
+    changed=true;
+  }
+  if(changed) save();
+}
+
+function posDiagnostic() {
+  const sh=shelves();const knownIds=new Set(sh.map(s=>s.id));
+  const pc={};
+  for(const it of S.items){if(!it.pos)continue;const p=it.pos.split('-')[0].trim();if(p)pc[p]=(pc[p]||0)+1;}
+  const rows=Object.entries(pc).sort((a,b)=>b[1]-a[1]);
+  if(!rows.length){document.getElementById('posDiagOut').textContent='No hay ítems con posición asignada.';return;}
+  document.getElementById('posDiagOut').innerHTML=rows.map(([p,c])=>
+    `<span style="display:inline-flex;gap:6px;align-items:center;padding:3px 8px;margin:2px;border-radius:4px;font-size:.75rem;background:${knownIds.has(p)?'rgba(34,197,94,.12)':'rgba(245,158,11,.12)'};border:1px solid ${knownIds.has(p)?'rgba(34,197,94,.3)':'rgba(245,158,11,.3)'}">
+      <b>${esc(p)}</b><span style="color:var(--mu)">${c}</span>${knownIds.has(p)?'<span style="color:var(--ok);font-size:.68rem">✓</span>':'<span style="color:var(--warn);font-size:.68rem">sin mapa</span>'}
+    </span>`
+  ).join('');
+}
+
+function runAutoRemap() {
+  tryAutoRemap();
+  renderShelfCfg();
+  renderDatalist();
+  if(ui.view==='map') buildMapSVG();
+  posDiagnostic();
+}
+
 // INIT
 load();
+tryAutoRemap();
 document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role===ses.role));
 applyTheme(localStorage.getItem('bodega_theme')||'noche');
 chkOnline();render();
