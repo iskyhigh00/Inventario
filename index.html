@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.7.2</title>
+  <title>Inventario v2.7.3</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -119,11 +119,11 @@
     .ipreview{background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:11px;margin-top:10px;font-size:.81rem}
     .isheet{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd)}
     .isheet:last-child{border-bottom:none}
-    .shelf-cfg-row{display:grid;grid-template-columns:1fr 62px 62px 62px auto;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)}
+    .shelf-cfg-row{display:grid;grid-template-columns:68px 1fr 54px 54px 54px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)}
     .shelf-cfg-row:last-child{border-bottom:none}
     .shelf-cfg-row input{background:var(--bg);border:1px solid var(--bd);border-radius:5px;color:var(--tx);padding:5px 8px;font-size:.82rem;outline:none;width:100%}
     .shelf-cfg-row input:focus{border-color:var(--ac)}
-    .shelf-cfg-hdr{display:grid;grid-template-columns:1fr 62px 62px 62px auto;gap:6px;padding:4px 0 6px;font-size:.68rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--bd);margin-bottom:4px}
+    .shelf-cfg-hdr{display:grid;grid-template-columns:68px 1fr 54px 54px 54px;gap:6px;padding:4px 0 6px;font-size:.68rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--bd);margin-bottom:4px}
     ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
     /* ── PALETAS ── */
     .theme-tog{display:flex;gap:4px;align-items:center;padding:3px 7px;background:var(--bg);border:1px solid var(--bd);border-radius:20px;flex-shrink:0}
@@ -142,7 +142,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.7.2</span>
+    <span class="vbadge" id="vbadge">v2.7.3</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -288,7 +288,7 @@
       <div style="font-size:.75rem;color:var(--mu);margin-bottom:8px">
         POS = <code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">ID-FilaCol</code> ej: <code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">E1-A1</code> · Ancho = unidades 3D (afecta mapa)
       </div>
-      <div class="shelf-cfg-hdr"><span>Etiqueta</span><span>Filas</span><span>Cols</span><span>Ancho</span><span></span></div>
+      <div class="shelf-cfg-hdr"><span title="Prefijo usado en posiciones (ej: E1-A3)">ID Prefijo</span><span>Etiqueta</span><span>Filas</span><span>Cols</span><span>Ancho</span></div>
       <div id="shelfCfgList"></div>
     </div>
     <div class="csec">
@@ -310,7 +310,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.7.2';
+const APP_VERSION = 'v2.7.3';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -818,16 +818,27 @@ function savePerm() { S.cfg.opCanAdd=document.getElementById('permAdd').checked;
 function renderShelfCfg() {
   const sh=shelves();
   document.getElementById('shelfCfgList').innerHTML=sh.map((s,idx)=>`<div class="shelf-cfg-row">
+    <input value="${esc(s.id)}" placeholder="ID" title="Prefijo de posición. Cámbialo si tus ítems usan otro prefijo (ej: E1)." style="color:var(--ac);font-weight:700" onchange="updateShelfId(${idx},this.value)" />
     <input value="${esc(s.label||s.id)}" placeholder="Etiqueta" onchange="updateShelf(${idx},'label',this.value)" />
-    <input type="number" value="${s.rows}" min="1" max="10" onchange="updateShelf(${idx},'rows',+this.value)" />
-    <input type="number" value="${s.cols}" min="1" max="10" onchange="updateShelf(${idx},'cols',+this.value)" />
-    <input type="number" value="${s.w||4}" min="1" max="20" step="0.5" title="Ancho 3D" onchange="updateShelf(${idx},'w',+this.value)" />
-    <span style="font-size:.7rem;color:var(--mu)">${s.id}</span>
+    <input type="number" value="${s.rows}" min="1" max="26" onchange="updateShelf(${idx},'rows',+this.value)" />
+    <input type="number" value="${s.cols}" min="1" max="20" onchange="updateShelf(${idx},'cols',+this.value)" />
+    <input type="number" value="${s.w||4}" min="1" max="20" step="0.5" onchange="updateShelf(${idx},'w',+this.value)" />
   </div>`).join('');
 }
 function updateShelf(idx,field,val) {
   if(!S.cfg.shelves)S.cfg.shelves=JSON.parse(JSON.stringify(DEFAULT_SHELVES));
   S.cfg.shelves[idx][field]=val;save();if(ui.view==='map')buildMapSVG();
+}
+function updateShelfId(idx,newId) {
+  newId=newId.trim();if(!newId)return;
+  if(!S.cfg.shelves)S.cfg.shelves=JSON.parse(JSON.stringify(DEFAULT_SHELVES));
+  const oldId=S.cfg.shelves[idx].id;
+  if(newId===oldId)return;
+  // Rename pos references in all items
+  const prefix=oldId+'-';
+  S.items.forEach(item=>{if(item.pos&&item.pos.startsWith(prefix))item.pos=newId+'-'+item.pos.slice(prefix.length);});
+  S.cfg.shelves[idx].id=newId;
+  save();renderDatalist();if(ui.view==='map')buildMapSVG();
 }
 function changePwd() {
   const p1=document.getElementById('pwd1').value,p2=document.getElementById('pwd2').value,m=document.getElementById('pwdMsg');
