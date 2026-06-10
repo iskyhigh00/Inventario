@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.7.0</title>
+  <title>Inventario v2.7.1</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -142,7 +142,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.7.0</span>
+    <span class="vbadge" id="vbadge">v2.7.1</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -183,6 +183,7 @@
       <select id="fPos"    onchange="applyFilters()"><option value="">Todas las posiciones</option></select>
       <select id="fEstado" onchange="applyFilters()"><option value="">Todos los estados</option></select>
       <select id="fMarca"  onchange="applyFilters()"><option value="">Todas las marcas</option></select>
+      <button id="hideEmptyBtn" class="bsm bp" onclick="toggleHideEmpty()" title="Mostrar u ocultar ítems sin stock">Sin stock: ocultos</button>
     </div>
     <div class="twrap">
       <table><thead id="thead"></thead><tbody id="tbody"></tbody></table>
@@ -306,7 +307,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.7.0';
+const APP_VERSION = 'v2.7.1';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -319,7 +320,7 @@ const DEFAULT_SHELVES = [
 
 let S = { lastSaved:null, cfg:{ pwdHash:btoa('obrist'), opCanAdd:false, shelves:null }, items:[] };
 let ses = { role:sessionStorage.getItem('r')||'visualizador', sa:sessionStorage.getItem('sa')==='1' };
-let ui = { cat:'all', sc:'pos', sd:1, view:'table' };
+let ui = { cat:'all', sc:'pos', sd:1, view:'table', hideEmpty:true };
 let pendingImport = null;
 let currentShelf = null;
 let currentCell  = null;
@@ -400,6 +401,7 @@ function filtered() {
   const fp=document.getElementById('fPos').value,fe=document.getElementById('fEstado').value,fm=document.getElementById('fMarca').value;
   return S.items.filter(i=>{
     if(ui.cat!=='all'&&i.category!==ui.cat)return false;
+    if(ui.hideEmpty&&ef(i)===0)return false;
     if(fp&&i.pos!==fp)return false;
     if(fe&&(i.condition||'').toLowerCase()!==fe.toLowerCase())return false;
     if(fm&&(i.brand||'').toLowerCase()!==fm.toLowerCase())return false;
@@ -412,6 +414,13 @@ function filtered() {
   });
 }
 function sortBy(col){ui.sd=ui.sc===col?-ui.sd:1;ui.sc=col;renderTable();}
+function toggleHideEmpty(){
+  ui.hideEmpty=!ui.hideEmpty;
+  const btn=document.getElementById('hideEmptyBtn');
+  btn.className=`bsm ${ui.hideEmpty?'bp':'bs'}`;
+  btn.textContent=ui.hideEmpty?'Sin stock: ocultos':'Sin stock: visibles';
+  applyFilters();
+}
 
 // RENDER
 function render() { renderHeader();renderStats();renderFilters();renderTable();renderDatalist();syncTxt(); }
@@ -455,7 +464,7 @@ function renderTable() {
     document.getElementById('tbody').innerHTML=items.map(item=>{
       const efv=ef(item),ret=item.retirado||0,isH=item.category==='Herramientas';
       const acts=`<div class="ra"><button class="bic bsm" onclick="openEdit('${item.id}')">✎</button><button class="bic bsm" style="color:var(--dan)" onclick="delItem('${item.id}')">✕</button></div>`;
-      return`<tr><td><span class="cat-dot">${esc(item.category||'')}</span></td><td><span class="pos-chip" onclick="locateOnMap('${esc(item.pos||'')}')" title="Ver en mapa">${esc(item.pos||'—')}</span></td><td><div style="font-weight:600">${esc(item.name)}</div>${item.notes?`<div style="font-size:.7rem;color:var(--mu)">${esc(item.notes)}</div>`:''}</td><td style="color:var(--mu)">${esc(item.brand||'')}</td><td>${condBadge(item.condition)}</td><td style="color:var(--mu)">${esc(item.model||'')}</td>${showBR?`<td class="tn">${isH?'—':item.bodega||0}</td>`:''}${showBR?`<td class="tr2 ${ret===0?'z':''}">${isH?'—':ret||0}</td>`:''}<td class="tb" style="${efv===0?'color:var(--dan)':''}">${efv}</td><td style="text-align:right;color:var(--mu)">${item.real!=null?item.real:''}</td><td>${acts}</td></tr>`;
+      return`<tr ondblclick="if(event.target.tagName!=='BUTTON')locateOnMap('${esc(item.pos||'')}')" style="cursor:default"><td><span class="cat-dot">${esc(item.category||'')}</span></td><td><span class="pos-chip" onclick="locateOnMap('${esc(item.pos||'')}')" title="Ver en mapa">${esc(item.pos||'—')}</span></td><td><div style="font-weight:600">${esc(item.name)}</div>${item.notes?`<div style="font-size:.7rem;color:var(--mu)">${esc(item.notes)}</div>`:''}</td><td style="color:var(--mu)">${esc(item.brand||'')}</td><td>${condBadge(item.condition)}</td><td style="color:var(--mu)">${esc(item.model||'')}</td>${showBR?`<td class="tn">${isH?'—':item.bodega||0}</td>`:''}${showBR?`<td class="tr2 ${ret===0?'z':''}">${isH?'—':ret||0}</td>`:''}<td class="tb" style="${efv===0?'color:var(--dan)':''}">${efv}</td><td style="text-align:right;color:var(--mu)">${item.real!=null?item.real:''}</td><td>${acts}</td></tr>`;
     }).join('');
   } else {
     // Vista simplificada
@@ -468,7 +477,7 @@ function renderTable() {
       if(isOp) acts=isH
         ?`<div class="qc"><button class="bic bsm" onclick="adjH('${item.id}',-1)">−</button><span class="qv">${efv}</span><button class="bic bsm" onclick="adjH('${item.id}',1)">+</button></div>`
         :`<div class="ra" style="opacity:1"><button class="bs bsm" onclick="openMov('${item.id}','entrada')">↑ Entrada</button><button class="bs bsm" style="color:var(--warn);border-color:var(--warn)" onclick="openMov('${item.id}','salida')">↓ Salida</button></div>`;
-      return`<tr><td style="padding-right:4px"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${item.category==='Repuestos'?'#3b82f6':item.category==='Herramientas'?'#a78bfa':'#4ade80'}"></span></td><td><span class="pos-chip" onclick="locateOnMap('${esc(item.pos||'')}')" title="Ver en mapa">${esc(item.pos||'—')}</span></td><td><div style="font-weight:600">${esc(item.name)}</div>${(item.brand||item.model)?`<div style="font-size:.7rem;color:var(--mu)">${[item.brand,item.model].filter(Boolean).map(esc).join(' · ')}</div>`:''}</td><td>${condBadge(item.condition)}</td><td>${stockBadge}</td><td>${acts}</td></tr>`;
+      return`<tr ondblclick="if(event.target.tagName!=='BUTTON')locateOnMap('${esc(item.pos||'')}')" style="cursor:default"><td style="padding-right:4px"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${item.category==='Repuestos'?'#3b82f6':item.category==='Herramientas'?'#a78bfa':'#4ade80'}"></span></td><td><span class="pos-chip" onclick="locateOnMap('${esc(item.pos||'')}')" title="Ver en mapa">${esc(item.pos||'—')}</span></td><td><div style="font-weight:600">${esc(item.name)}</div>${(item.brand||item.model)?`<div style="font-size:.7rem;color:var(--mu)">${[item.brand,item.model].filter(Boolean).map(esc).join(' · ')}</div>`:''}</td><td>${condBadge(item.condition)}</td><td>${stockBadge}</td><td>${acts}</td></tr>`;
     }).join('');
   }
 }
