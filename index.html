@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.7.1</title>
+  <title>Inventario v2.7.2</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -142,7 +142,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.7.1</span>
+    <span class="vbadge" id="vbadge">v2.7.2</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -194,7 +194,10 @@
   <!-- MAPA SVG -->
   <div id="viewMap" class="hidden map-wrap">
     <div class="map-toolbar">
-      <span class="map-hint">🖱 Arrastra para mover · Rueda: zoom · Hover o clic en celda: ver contenido · Clic en ubicación de la lista: localizar aquí</span>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span class="map-hint">🖱 Arrastra · Rueda: zoom · Hover o clic en celda: ver contenido · Clic en ubicación de la lista: localizar aquí</span>
+        <span id="mapItemCount" style="font-size:.68rem;color:var(--mu)"></span>
+      </div>
       <button class="bic bsm" onclick="resetCam()">⊙ Reset</button>
     </div>
     <div id="mapSVGWrap">
@@ -307,7 +310,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.7.1';
+const APP_VERSION = 'v2.7.2';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -647,9 +650,13 @@ function buildMapSVG() {
         rect.setAttribute('data-cid',cid);
         g.appendChild(rect);
 
+        // Cell label (e.g. A1)
+        const lbEl=txt(`${rows[r]}${c+1}`,{'x':rx+3,'y':ry+9,'font-size':'7','fill':'var(--mu)','pointer-events':'none'});
+        g.appendChild(lbEl);
+
         if(its.length){
           const tot=its.reduce((s,i)=>s+ef(i),0);
-          const tEl=txt(tot,{'x':rx+(CW-2)/2,'y':ry+(CH-2)/2+4,'text-anchor':'middle','font-size':'11','font-weight':'700','fill':hasOut?'#f87171':hasRet?'#fbbf24':'#4ade80'});
+          const tEl=txt(tot,{'x':rx+(CW-2)/2,'y':ry+(CH-2)/2+6,'text-anchor':'middle','font-size':'12','font-weight':'700','fill':hasOut?'#f87171':hasRet?'#fbbf24':'#4ade80'});
           tEl.setAttribute('data-cid',cid);
           g.appendChild(tEl);
         }
@@ -669,6 +676,13 @@ function buildMapSVG() {
   svg.setAttribute('width', x+10);
   svg.setAttribute('height', svgH);
   applyMapXform();
+
+  // Update mapped-items counter
+  const allCids=new Set();
+  for(const sh of shelves()){const rows=rowLabels(sh);for(const r of rows)for(let c=1;c<=sh.cols;c++)allCids.add(cellId(sh.id,r,c));}
+  const mapped=S.items.filter(i=>allCids.has(i.pos)).length;
+  const el2=document.getElementById('mapItemCount');
+  if(el2) el2.textContent=`${mapped} de ${S.items.length} ítems en el mapa`;
 }
 
 function refreshMap3D() { buildMapSVG(); }
@@ -687,17 +701,18 @@ function locateOnMap(pos) {
 }
 
 function renderCellPanel(cid) {
-  const parts=cid.split('-'); if(parts.length<2) return;
-  const shelfId=parts[0], rowCol=parts[1], row=rowCol[0], col=parseInt(rowCol.slice(1));
-  const its=cellItems(shelfId,row,col);
-  const sh=shelfById(shelfId);
-  document.getElementById('cellPanelTitle').textContent=`📍 ${sh?.label||shelfId} · Fila ${row}, Columna ${col}`;
-  const canAdd=ses.sa||(ses.role==='operador'&&S.cfg.opCanAdd);
-  let html='';
-  if(!its.length){
-    html=`<div style="color:var(--mu);font-size:.82rem">Espacio vacío${canAdd?` — <button class="bp bsm" onclick="openAdd('${cid}')" style="margin-left:4px">+ Agregar aquí</button>`:''}</div>`;
+  // Direct lookup — cid IS the pos value stored on items
+  const its = S.items.filter(i => i.pos === cid);
+  const shelfId = cid.split('-')[0];
+  const sh = shelfById(shelfId);
+  const label = cid.split('-')[1] || cid;
+  document.getElementById('cellPanelTitle').textContent = `📍 ${sh?.label||shelfId} · ${label}`;
+  const canAdd = ses.sa||(ses.role==='operador'&&S.cfg.opCanAdd);
+  let html = '';
+  if(!its.length) {
+    html = `<div style="color:var(--mu);font-size:.82rem">Espacio vacío — <span style="font-size:.72rem">${cid}</span>${canAdd?` <button class="bp bsm" onclick="openAdd('${cid}')" style="margin-left:4px">+ Agregar aquí</button>`:''}</div>`;
   } else {
-    html=its.map(item=>{
+    html = its.map(item => {
       const efv=ef(item),isH=item.category==='Herramientas';
       const sc=efv===0?'var(--dan)':efv<=2?'var(--warn)':'var(--ok)';
       let acts='';
@@ -705,11 +720,11 @@ function renderCellPanel(cid) {
       else if(ses.role==='operador') acts=isH
         ?`<button class="bic bsm" onclick="adjH('${item.id}',-1);renderCellPanel('${cid}')">−</button><button class="bic bsm" onclick="adjH('${item.id}',1);renderCellPanel('${cid}')">+</button>`
         :`<button class="bs bsm" onclick="openMov('${item.id}','entrada')">↑ Entrada</button><button class="bs bsm" style="color:var(--warn);border-color:var(--warn)" onclick="openMov('${item.id}','salida')">↓ Salida</button>`;
-      return`<div class="cell-item-row"><div class="cell-item-info"><div class="cell-item-name">${esc(item.name)}</div><div class="cell-item-meta">${[item.category,item.brand].filter(Boolean).map(esc).join(' · ')}</div></div><div class="cell-item-stock" style="color:${sc}">${efv}&nbsp;uds</div><div style="display:flex;gap:4px">${acts}</div></div>`;
+      return `<div class="cell-item-row"><div class="cell-item-info"><div class="cell-item-name">${esc(item.name)}</div><div class="cell-item-meta">${[item.category,item.brand].filter(Boolean).map(esc).join(' · ')}</div></div><div class="cell-item-stock" style="color:${sc}">${efv}&nbsp;uds</div><div style="display:flex;gap:4px">${acts}</div></div>`;
     }).join('');
-    if(canAdd) html+=`<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--bd)"><button class="bs bsm" onclick="openAdd('${cid}')">+ Agregar otro aquí</button></div>`;
+    if(canAdd) html += `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--bd)"><button class="bs bsm" onclick="openAdd('${cid}')">+ Agregar otro aquí</button></div>`;
   }
-  document.getElementById('cellPanelContent').innerHTML=html;
+  document.getElementById('cellPanelContent').innerHTML = html;
   document.getElementById('cellPanel').classList.remove('hidden');
 }
 
