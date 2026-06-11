@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.9.0</title>
+  <title>Inventario v2.9.1</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -170,7 +170,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.9.0</span>
+    <span class="vbadge" id="vbadge">v2.9.1</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -227,7 +227,7 @@
     </div>
     <div class="map-body">
       <div class="map-sidebar">
-        <button class="floor2-btn" id="floor2Btn" onclick="selectMapZone('2do')">🏢<br>2° Piso</button>
+        <div id="specialZonesEl"></div>
         <div id="shelfNavList"></div>
       </div>
       <div class="map-main" id="mapMain">
@@ -371,7 +371,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.9.0';
+const APP_VERSION = 'v2.9.1';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -382,6 +382,32 @@ const DEFAULT_SHELVES = [
   { id:'E1',  label:'Estante 1',  aisle:'A', rows:4, cols:5, w:4, wall:true },
 ];
 // startRow values are always auto-computed by computeStartRows() — not stored in DEFAULT_SHELVES
+
+// Zonas especiales: aparecen como tarjetas grandes en la barra lateral del mapa.
+// prefix = prefijo del pos (case-insensitive); '' o null = catch-all (todo lo que no encaja en otra zona).
+const SPECIAL_ZONES = [
+  { id:'taller', label:'Taller',   icon:'🔧', prefix:'taller' },
+  { id:'2do',    label:'2° Piso',  icon:'🏢', prefix:'' },
+];
+
+function allShelfCids() {
+  const s=new Set();
+  for(const sh of shelves()){const rows=rowLabels(sh);for(const r of rows)for(let c=1;c<=sh.cols;c++)s.add(cellId(sh.id,r,c));}
+  return s;
+}
+
+function posZone(pos, cids) {
+  if(!pos||pos==='—'||cids.has(pos)) return null;
+  for(const z of SPECIAL_ZONES) if(z.prefix&&pos.toLowerCase().startsWith(z.prefix.toLowerCase())) return z.id;
+  const catchAll=SPECIAL_ZONES.find(z=>!z.prefix);
+  return catchAll?.id??null;
+}
+
+function zoneLabelForPos(pos) {
+  const sh=shelfByRow(pos?.[0]); if(sh) return sh.label;
+  const zid=posZone(pos,allShelfCids());
+  return SPECIAL_ZONES.find(z=>z.id===zid)?.label||'—';
+}
 
 let S = { lastSaved:null, cfg:{ pwdHash:btoa('obrist'), opCanAdd:false, shelves:null }, items:[] };
 let ses = { role:sessionStorage.getItem('r')||'visualizador', sa:sessionStorage.getItem('sa')==='1' };
@@ -589,14 +615,17 @@ function initOrRefreshMap() {
 
 function buildShelfNav() {
   const sh=shelves(),z=currentMapZone;
+  const cids=allShelfCids();
+  // Special zone cards
+  document.getElementById('specialZonesEl').innerHTML=SPECIAL_ZONES.map(zone=>{
+    const cnt=S.items.filter(i=>posZone(i.pos,cids)===zone.id).length;
+    return`<button class="floor2-btn${z===zone.id?' active':''}" onclick="selectMapZone('${zone.id}')">${zone.icon}<br>${esc(zone.label)}<br><span style="font-size:.65rem;opacity:.7">${cnt} ítem${cnt!==1?'s':''}</span></button>`;
+  }).join('');
+  // Shelf buttons
   document.getElementById('shelfNavList').innerHTML=sh.map(s=>
     `<button class="shelf-nav-btn${z===s.id?' active':''}" onclick="selectMapZone('${esc(s.id)}')">${esc(s.label||s.id)}</button>`
   ).join('');
-  const f2=document.getElementById('floor2Btn');
-  if(f2)f2.classList.toggle('active',z==='2do');
-  const allCids=new Set();
-  for(const s of sh){const rows=rowLabels(s);for(const r of rows)for(let c=1;c<=s.cols;c++)allCids.add(cellId(s.id,r,c));}
-  const mapped=S.items.filter(i=>allCids.has(i.pos)).length;
+  const mapped=S.items.filter(i=>cids.has(i.pos)).length;
   const mc=document.getElementById('mapItemCount');
   if(mc)mc.textContent=`${mapped} de ${S.items.length} ítems en el mapa`;
 }
@@ -609,28 +638,28 @@ function selectMapZone(zoneId) {
 
 function buildMapView() {
   const container=document.getElementById('mapMain');if(!container)return;
-  if(currentMapZone==='2do'){buildFloor2View(container);return;}
+  const zone=SPECIAL_ZONES.find(z=>z.id===currentMapZone);
+  if(zone){buildSpecialZoneView(container,zone);return;}
   const sh=shelfById(currentMapZone);
-  if(!sh){container.innerHTML='<div style="color:var(--mu);padding:20px;text-align:center">Selecciona un estante</div>';return;}
+  if(!sh){container.innerHTML='<div style="color:var(--mu);padding:20px;text-align:center">Selecciona un estante o zona</div>';return;}
   buildShelfGrid(container,sh);
 }
 
-function buildFloor2View(container) {
-  const allCids=new Set();
-  for(const s of shelves()){const rows=rowLabels(s);for(const r of rows)for(let c=1;c<=s.cols;c++)allCids.add(cellId(s.id,r,c));}
-  const orphans=S.items.filter(i=>i.pos&&i.pos!=='—'&&!allCids.has(i.pos));
-  if(!orphans.length){
-    container.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--mu)"><div style="font-size:2rem;margin-bottom:8px">🏢</div><div style="font-size:.85rem">No hay ítems registrados en el 2° piso.<br>Los ítems cuya posición no aparece en ningún estante se mostrarán aquí.</div></div>`;
+function buildSpecialZoneView(container,zone) {
+  const cids=allShelfCids();
+  const items=S.items.filter(i=>posZone(i.pos,cids)===zone.id);
+  if(!items.length){
+    container.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--mu)"><div style="font-size:2.5rem;margin-bottom:8px">${zone.icon}</div><div style="font-size:.85rem">No hay ítems en ${esc(zone.label)}.</div></div>`;
     return;
   }
   const byPos={};
-  for(const it of orphans){if(!byPos[it.pos])byPos[it.pos]=[];byPos[it.pos].push(it);}
+  for(const it of items){if(!byPos[it.pos])byPos[it.pos]=[];byPos[it.pos].push(it);}
   container.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:8px;padding:4px">`+
-    Object.entries(byPos).map(([pos,its])=>{
+    Object.entries(byPos).sort((a,b)=>a[0].localeCompare(b[0])).map(([pos,its])=>{
       const total=its.reduce((s,i)=>s+ef(i),0);
       const hasOut=its.some(i=>ef(i)===0),hasRet=its.some(i=>(i.retirado||0)>0);
-      const clz='map-cell'+(currentCell===pos?' mc-active':'')+(hasOut?' mc-bad':hasRet?' mc-warn':' mc-ok');
-      return`<div class="${clz}" onclick="clickMapCell('${esc(pos)}')" style="width:120px">
+      let clz='map-cell'+(currentCell===pos?' mc-active':'')+(its.length?(hasOut?' mc-bad':hasRet?' mc-warn':' mc-ok'):'');
+      return`<div class="${clz}" onclick="clickMapCell('${esc(pos)}')" style="min-width:110px;max-width:180px">
         <div class="mc-id">${esc(pos)}</div>
         <div class="mc-stock" style="color:${hasOut?'var(--dan)':hasRet?'var(--warn)':'var(--ok)'}">${total} uds</div>
         <div class="mc-name">${its.map(i=>esc(i.name)).join(', ')}</div>
@@ -687,7 +716,7 @@ function locateOnMap(pos) {
   if(!pos)return;
   currentCell=pos;
   const sh=shelfByRow(pos[0]);
-  currentMapZone=sh?sh.id:'2do';
+  currentMapZone=sh?sh.id:(posZone(pos,allShelfCids())||SPECIAL_ZONES[SPECIAL_ZONES.length-1].id);
   setView('map');
   buildShelfNav();buildMapView();renderCellPanel(pos);
   setTimeout(()=>document.getElementById('cellPanel')?.scrollIntoView({behavior:'smooth',block:'nearest'}),80);
@@ -696,7 +725,7 @@ function locateOnMap(pos) {
 function renderCellPanel(cid) {
   const its = S.items.filter(i => i.pos === cid);
   const sh = shelfByRow(cid?.[0]);
-  document.getElementById('cellPanelTitle').textContent = `📍 ${sh?.label||'—'} · ${cid}`;
+  document.getElementById('cellPanelTitle').textContent = `📍 ${sh?.label||zoneLabelForPos(cid)} · ${cid}`;
   const canAdd = ses.sa||(ses.role==='operador'&&S.cfg.opCanAdd);
   let html = '';
   if(!its.length) {
@@ -748,7 +777,7 @@ function levRender() {
   const pct=Math.round((idx/cells.length)*100);
   document.getElementById('levProgress').textContent=`Celda ${idx+1} de ${cells.length} · ${levState.changes} cambio${levState.changes!==1?'s':''}`;
   document.getElementById('levBar').style.width=pct+'%';
-  document.getElementById('levCellTitle').innerHTML=`📍 <span style="color:var(--mu);font-size:.82rem">${sh?.label||'2° Piso'}</span> &nbsp;<span style="color:var(--ac)">${esc(cid)}</span>`;
+  document.getElementById('levCellTitle').innerHTML=`📍 <span style="color:var(--mu);font-size:.82rem">${sh?.label||zoneLabelForPos(cid)}</span> &nbsp;<span style="color:var(--ac)">${esc(cid)}</span>`;
   document.getElementById('levBody').innerHTML=its.length
     ?its.map(item=>{
         const efv=ef(item),isH=item.category==='Herramientas';
