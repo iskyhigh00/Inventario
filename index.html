@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.7.4</title>
+  <title>Inventario v2.8.0</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -119,11 +119,11 @@
     .ipreview{background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:11px;margin-top:10px;font-size:.81rem}
     .isheet{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd)}
     .isheet:last-child{border-bottom:none}
-    .shelf-cfg-row{display:grid;grid-template-columns:68px 1fr 54px 54px 54px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)}
+    .shelf-cfg-row{display:grid;grid-template-columns:68px 1fr 38px 54px 54px 54px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)}
     .shelf-cfg-row:last-child{border-bottom:none}
     .shelf-cfg-row input{background:var(--bg);border:1px solid var(--bd);border-radius:5px;color:var(--tx);padding:5px 8px;font-size:.82rem;outline:none;width:100%}
     .shelf-cfg-row input:focus{border-color:var(--ac)}
-    .shelf-cfg-hdr{display:grid;grid-template-columns:68px 1fr 54px 54px 54px;gap:6px;padding:4px 0 6px;font-size:.68rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--bd);margin-bottom:4px}
+    .shelf-cfg-hdr{display:grid;grid-template-columns:68px 1fr 38px 54px 54px 54px;gap:6px;padding:4px 0 6px;font-size:.68rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--bd);margin-bottom:4px}
     ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
     /* ── PALETAS ── */
     .theme-tog{display:flex;gap:4px;align-items:center;padding:3px 7px;background:var(--bg);border:1px solid var(--bd);border-radius:20px;flex-shrink:0}
@@ -142,7 +142,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.7.4</span>
+    <span class="vbadge" id="vbadge">v2.8.0</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -286,9 +286,9 @@
     <div class="csec">
       <h3>Distribución de estantes</h3>
       <div style="font-size:.75rem;color:var(--mu);margin-bottom:8px">
-        POS = <code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">ID-FilaCol</code> · El <b>ID Prefijo</b> debe coincidir con el prefijo en las posiciones de tus ítems (antes del guion)
+        POS = <code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">FilaCol</code> · Cada estante ocupa un rango continuo de letras de fila. <b>Ini</b> se calcula automáticamente según el orden numérico del estante.
       </div>
-      <div class="shelf-cfg-hdr"><span title="Prefijo usado en posiciones (ej: E1-A3)">ID Prefijo</span><span>Etiqueta</span><span>Filas</span><span>Cols</span><span>Ancho</span></div>
+      <div class="shelf-cfg-hdr"><span>ID</span><span>Etiqueta</span><span>Ini</span><span>Filas</span><span>Cols</span><span>Ancho</span></div>
       <div id="shelfCfgList"></div>
     </div>
     <div class="csec">
@@ -301,11 +301,10 @@
     </div>
     <div class="csec">
       <h3>Diagnóstico de posiciones</h3>
-      <div style="font-size:.75rem;color:var(--mu);margin-bottom:8px">Prefijos usados en tus ítems vs IDs de estantes configurados. Verde = mapeado, amarillo = sin mapa.</div>
+      <div style="font-size:.75rem;color:var(--mu);margin-bottom:8px">Posiciones usadas en tus ítems vs celdas en el mapa. Verde = mapeado, amarillo = fuera del mapa.</div>
       <div id="posDiagOut" style="margin-bottom:8px"></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="bs bsm" onclick="posDiagnostic()">🔍 Ver diagnóstico</button>
-        <button class="bp bsm" onclick="runAutoRemap()" title="Intenta igualar los IDs de estantes con los prefijos de tus ítems">⚡ Auto-mapear prefijos</button>
       </div>
     </div>
     <div class="csec">
@@ -319,7 +318,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.7.4';
+const APP_VERSION = 'v2.8.0';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -329,6 +328,7 @@ const DEFAULT_SHELVES = [
   { id:'E2A', label:'Estante 2A', aisle:'A', rows:4, cols:5, w:4 },
   { id:'E1',  label:'Estante 1',  aisle:'A', rows:4, cols:5, w:4, wall:true },
 ];
+// startRow values are always auto-computed by computeStartRows() — not stored in DEFAULT_SHELVES
 
 let S = { lastSaved:null, cfg:{ pwdHash:btoa('obrist'), opCanAdd:false, shelves:null }, items:[] };
 let ses = { role:sessionStorage.getItem('r')||'visualizador', sa:sessionStorage.getItem('sa')==='1' };
@@ -340,14 +340,41 @@ let currentCell  = null;
 const genId = () => Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 const esc   = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const n     = (v,d=0) => isNaN(parseInt(v))?d:parseInt(v);
-const ROWLABELS = 'ABCDEFGHIJ';
+const ROWLABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 function shelves() { return S.cfg.shelves||DEFAULT_SHELVES; }
 function shelfById(id) { return shelves().find(s=>s.id===id); }
-function rowLabels(sh) { return ROWLABELS.slice(0,sh.rows).split(''); }
-function cellId(shId,row,col) { return `${shId}-${row}${col}`; }
+function rowLabels(sh) {
+  const start = ROWLABELS.indexOf(sh.startRow||'A');
+  return ROWLABELS.slice(start < 0 ? 0 : start, (start < 0 ? 0 : start) + sh.rows).split('');
+}
+function cellId(shId,row,col) { return `${row}${col}`; }
 function cellItems(shId,row,col) { return S.items.filter(i=>i.pos===cellId(shId,row,col)); }
 function shelfW(sh) { return sh.w||4; }
+
+// Find which shelf owns a given row letter
+function shelfByRow(row) {
+  if(!row) return null;
+  for(const sh of shelves()) { if(rowLabels(sh).includes(row)) return sh; }
+  return null;
+}
+
+// Auto-assign startRow sequentially sorted by numeric label (e.g. "Estante 1"→1, "Estante 2A"→2.1)
+function computeStartRows() {
+  if(!S.cfg.shelves) S.cfg.shelves = JSON.parse(JSON.stringify(DEFAULT_SHELVES));
+  const labelNum = s => {
+    const m = (s.label||s.id).match(/(\d+)\s*([A-Z]?)/i);
+    if(!m) return 9999;
+    return parseInt(m[1])*100 + (m[2] ? m[2].toUpperCase().charCodeAt(0)-64 : 0);
+  };
+  const order = [...S.cfg.shelves].sort((a,b) => labelNum(a)-labelNum(b));
+  let idx = 0;
+  for(const sh of order) {
+    sh.startRow = ROWLABELS[idx] || 'A';
+    idx += sh.rows;
+  }
+  save();
+}
 
 function ef(item) {
   if(item.category==='Herramientas') return item.cantidad||0;
@@ -599,9 +626,12 @@ function buildMapSVG() {
   const srchQ = (document.getElementById('searchInput').value||'').toLowerCase();
   const matched = new Set();
   if(srchQ) {
-    for(const item of S.items)
-      if([item.name,item.brand,item.pos,item.condition,item.model,item.notes].join(' ').toLowerCase().includes(srchQ))
-        for(const sh of shelves()) if(item.pos?.startsWith(sh.id+'-')) matched.add(sh.id);
+    for(const item of S.items) {
+      if([item.name,item.brand,item.pos,item.condition,item.model,item.notes].join(' ').toLowerCase().includes(srchQ)) {
+        const sh = shelfByRow(item.pos?.[0]);
+        if(sh) matched.add(sh.id);
+      }
+    }
   }
 
   const ns = 'http://www.w3.org/2000/svg';
@@ -702,7 +732,7 @@ function resetCam() {
 }
 
 function locateOnMap(pos) {
-  if(!pos||!pos.includes('-')) return;
+  if(!pos) return;
   currentCell=pos;
   setView('map');
   buildMapSVG();
@@ -710,12 +740,9 @@ function locateOnMap(pos) {
 }
 
 function renderCellPanel(cid) {
-  // Direct lookup — cid IS the pos value stored on items
   const its = S.items.filter(i => i.pos === cid);
-  const shelfId = cid.split('-')[0];
-  const sh = shelfById(shelfId);
-  const label = cid.split('-')[1] || cid;
-  document.getElementById('cellPanelTitle').textContent = `📍 ${sh?.label||shelfId} · ${label}`;
+  const sh = shelfByRow(cid?.[0]);
+  document.getElementById('cellPanelTitle').textContent = `📍 ${sh?.label||'—'} · ${cid}`;
   const canAdd = ses.sa||(ses.role==='operador'&&S.cfg.opCanAdd);
   let html = '';
   if(!its.length) {
@@ -827,9 +854,10 @@ function savePerm() { S.cfg.opCanAdd=document.getElementById('permAdd').checked;
 function renderShelfCfg() {
   const sh=shelves();
   document.getElementById('shelfCfgList').innerHTML=sh.map((s,idx)=>`<div class="shelf-cfg-row">
-    <input value="${esc(s.id)}" placeholder="ID" title="Prefijo de posición. Cámbialo si tus ítems usan otro prefijo (ej: E1)." style="color:var(--ac);font-weight:700" onchange="updateShelfId(${idx},this.value)" />
+    <input value="${esc(s.id)}" placeholder="ID" style="color:var(--ac);font-weight:700" onchange="updateShelfId(${idx},this.value)" />
     <input value="${esc(s.label||s.id)}" placeholder="Etiqueta" onchange="updateShelf(${idx},'label',this.value)" />
-    <input type="number" value="${s.rows}" min="1" max="26" onchange="updateShelf(${idx},'rows',+this.value)" />
+    <input value="${esc(s.startRow||'?')}" readonly style="color:var(--ok);font-weight:700;text-align:center;cursor:default" title="Fila inicial (auto-calculada)" />
+    <input type="number" value="${s.rows}" min="1" max="26" onchange="updateShelfRows(${idx},+this.value)" />
     <input type="number" value="${s.cols}" min="1" max="20" onchange="updateShelf(${idx},'cols',+this.value)" />
     <input type="number" value="${s.w||4}" min="1" max="20" step="0.5" onchange="updateShelf(${idx},'w',+this.value)" />
   </div>`).join('');
@@ -838,14 +866,19 @@ function updateShelf(idx,field,val) {
   if(!S.cfg.shelves)S.cfg.shelves=JSON.parse(JSON.stringify(DEFAULT_SHELVES));
   S.cfg.shelves[idx][field]=val;save();if(ui.view==='map')buildMapSVG();
 }
+function updateShelfRows(idx,val) {
+  if(!S.cfg.shelves)S.cfg.shelves=JSON.parse(JSON.stringify(DEFAULT_SHELVES));
+  S.cfg.shelves[idx].rows=val;
+  computeStartRows();
+  renderShelfCfg();
+  renderDatalist();
+  if(ui.view==='map')buildMapSVG();
+}
 function updateShelfId(idx,newId) {
   newId=newId.trim();if(!newId)return;
   if(!S.cfg.shelves)S.cfg.shelves=JSON.parse(JSON.stringify(DEFAULT_SHELVES));
   const oldId=S.cfg.shelves[idx].id;
   if(newId===oldId)return;
-  // Rename pos references in all items
-  const prefix=oldId+'-';
-  S.items.forEach(item=>{if(item.pos&&item.pos.startsWith(prefix))item.pos=newId+'-'+item.pos.slice(prefix.length);});
   S.cfg.shelves[idx].id=newId;
   save();renderDatalist();if(ui.view==='map')buildMapSVG();
 }
@@ -948,60 +981,24 @@ function applyTheme(name) {
 function chkOnline(){document.getElementById('offlineBanner').classList.toggle('hidden',navigator.onLine);syncTxt();}
 window.addEventListener('online',chkOnline);window.addEventListener('offline',chkOnline);
 
-// Auto-remap shelf IDs so map matches whatever pos prefix the items actually use.
-// Matching rule: trailing number+letter of prefix must equal trailing number+letter of shelf label.
-// Example: item pos "E1-A3" → prefix "E1" → suffix "1" → matches shelf labeled "Estante 1".
-function tryAutoRemap() {
-  const sh = shelves();
-  const knownIds = new Set(sh.map(s=>s.id));
-  const pc = {};
-  for(const it of S.items){if(!it.pos)continue;const p=it.pos.split('-')[0].trim();if(p)pc[p]=(pc[p]||0)+1;}
-  const unmapped = Object.keys(pc).filter(p=>!knownIds.has(p));
-  if(!unmapped.length) return;
-  if(!S.cfg.shelves) S.cfg.shelves=JSON.parse(JSON.stringify(DEFAULT_SHELVES));
-  const suffix = s=>{const m=String(s||'').match(/(\d+[A-Z]*)(?:\s*)$/i);return m?m[1].toUpperCase():'';};
-  const byLabel = {};
-  S.cfg.shelves.forEach((s,i)=>{const k=suffix(s.label||s.id);if(k)byLabel[k]=i;});
-  let changed=false;
-  for(const prefix of unmapped){
-    const suf=suffix(prefix);
-    if(!suf) continue;
-    const idx=byLabel[suf]??-1;
-    if(idx<0) continue;
-    if(S.cfg.shelves.some((s,i)=>i!==idx&&s.id===prefix)) continue; // conflict
-    const oldId=S.cfg.shelves[idx].id;
-    if(oldId===prefix) continue;
-    S.cfg.shelves[idx].id=prefix;
-    S.items.forEach(it=>{if(it.pos?.startsWith(oldId+'-'))it.pos=prefix+'-'+it.pos.slice(oldId.length+1);});
-    changed=true;
-  }
-  if(changed) save();
-}
-
 function posDiagnostic() {
-  const sh=shelves();const knownIds=new Set(sh.map(s=>s.id));
+  const allCids=new Set();
+  for(const sh of shelves()){const rows=rowLabels(sh);for(const r of rows)for(let c=1;c<=sh.cols;c++)allCids.add(cellId(sh.id,r,c));}
   const pc={};
-  for(const it of S.items){if(!it.pos)continue;const p=it.pos.split('-')[0].trim();if(p)pc[p]=(pc[p]||0)+1;}
-  const rows=Object.entries(pc).sort((a,b)=>b[1]-a[1]);
+  for(const it of S.items){if(!it.pos||it.pos==='—')continue;pc[it.pos]=(pc[it.pos]||0)+1;}
+  const rows=Object.entries(pc).sort((a,b)=>b[1]-a[1]).slice(0,60);
   if(!rows.length){document.getElementById('posDiagOut').textContent='No hay ítems con posición asignada.';return;}
-  document.getElementById('posDiagOut').innerHTML=rows.map(([p,c])=>
-    `<span style="display:inline-flex;gap:6px;align-items:center;padding:3px 8px;margin:2px;border-radius:4px;font-size:.75rem;background:${knownIds.has(p)?'rgba(34,197,94,.12)':'rgba(245,158,11,.12)'};border:1px solid ${knownIds.has(p)?'rgba(34,197,94,.3)':'rgba(245,158,11,.3)'}">
-      <b>${esc(p)}</b><span style="color:var(--mu)">${c}</span>${knownIds.has(p)?'<span style="color:var(--ok);font-size:.68rem">✓</span>':'<span style="color:var(--warn);font-size:.68rem">sin mapa</span>'}
-    </span>`
-  ).join('');
-}
-
-function runAutoRemap() {
-  tryAutoRemap();
-  renderShelfCfg();
-  renderDatalist();
-  if(ui.view==='map') buildMapSVG();
-  posDiagnostic();
+  document.getElementById('posDiagOut').innerHTML=rows.map(([p,c])=>{
+    const mapped=allCids.has(p);
+    return`<span style="display:inline-flex;gap:6px;align-items:center;padding:3px 8px;margin:2px;border-radius:4px;font-size:.75rem;background:${mapped?'rgba(34,197,94,.12)':'rgba(245,158,11,.12)'};border:1px solid ${mapped?'rgba(34,197,94,.3)':'rgba(245,158,11,.3)'}">
+      <b>${esc(p)}</b><span style="color:var(--mu)">${c}</span>${mapped?'<span style="color:var(--ok);font-size:.68rem">✓</span>':'<span style="color:var(--warn);font-size:.68rem">sin mapa</span>'}
+    </span>`;
+  }).join('');
 }
 
 // INIT
 load();
-tryAutoRemap();
+computeStartRows();
 document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role===ses.role));
 applyTheme(localStorage.getItem('bodega_theme')||'noche');
 chkOnline();render();
