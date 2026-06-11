@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.9.1</title>
+  <title>Inventario v2.9.2</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -170,7 +170,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.9.1</span>
+    <span class="vbadge" id="vbadge">v2.9.2</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -207,10 +207,12 @@
   <!-- TABLE -->
   <div id="viewTable">
     <div class="filters">
-      <span class="fl">Filtrar:</span>
-      <select id="fPos"    onchange="applyFilters()"><option value="">Todas las posiciones</option></select>
-      <select id="fEstado" onchange="applyFilters()"><option value="">Todos los estados</option></select>
-      <select id="fMarca"  onchange="applyFilters()"><option value="">Todas las marcas</option></select>
+      <span id="filterDropdowns" style="display:contents">
+        <span class="fl">Filtrar:</span>
+        <select id="fPos"    onchange="applyFilters()"><option value="">Todas las posiciones</option></select>
+        <select id="fEstado" onchange="applyFilters()"><option value="">Todos los estados</option></select>
+        <select id="fMarca"  onchange="applyFilters()"><option value="">Todas las marcas</option></select>
+      </span>
       <button id="hideEmptyBtn" class="bsm bp" onclick="toggleHideEmpty()" title="Mostrar u ocultar ítems sin stock">Sin stock: ocultos</button>
     </div>
     <div class="twrap">
@@ -371,7 +373,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.9.1';
+const APP_VERSION = 'v2.9.2';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -478,9 +480,51 @@ function shelfStatusHex(shId) {
   return 0x22c55e;
 }
 
-// PERSIST
-function save() { S.lastSaved=new Date().toISOString();localStorage.setItem(SK,JSON.stringify(S));syncTxt(); }
-function load() { try{const r=localStorage.getItem(SK);if(r){const p=JSON.parse(r);S={...S,...p};if(p.cfg)S.cfg={...S.cfg,...p.cfg};}}catch(e){} }
+// PERSIST — AES-GCM encrypted localStorage
+const _KP = 'bdg_v2_2025_xK9m_secure';
+let _ck = null;
+
+async function _initKey() {
+  if(!window.crypto?.subtle) return;
+  try {
+    const enc = new TextEncoder();
+    const km = await crypto.subtle.importKey('raw', enc.encode(_KP), {name:'PBKDF2'}, false, ['deriveKey']);
+    _ck = await crypto.subtle.deriveKey(
+      {name:'PBKDF2', salt:enc.encode('bodega_salt_2025'), iterations:50000, hash:'SHA-256'},
+      km, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']
+    );
+  } catch(e) { _ck = null; }
+}
+
+async function _encStr(obj) {
+  if(!_ck) return JSON.stringify(obj);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, _ck, new TextEncoder().encode(JSON.stringify(obj)));
+  const buf = new Uint8Array(12 + ct.byteLength);
+  buf.set(iv); buf.set(new Uint8Array(ct), 12);
+  return 'e1:' + btoa(String.fromCharCode(...buf));
+}
+
+async function _decStr(str) {
+  if(!_ck || !str.startsWith('e1:')) return JSON.parse(str);
+  const bin = Uint8Array.from(atob(str.slice(3)), c=>c.charCodeAt(0));
+  const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:bin.slice(0,12)}, _ck, bin.slice(12));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+function save() {
+  S.lastSaved = new Date().toISOString();
+  _encStr(S).then(enc => localStorage.setItem(SK, enc)).catch(() => localStorage.setItem(SK, JSON.stringify(S)));
+  syncTxt();
+}
+
+async function load() {
+  try {
+    const r = localStorage.getItem(SK);
+    if(r) { const p = await _decStr(r); S={...S,...p}; if(p.cfg) S.cfg={...S.cfg,...p.cfg}; }
+  } catch(e) {}
+}
+
 function syncTxt() { document.getElementById('syncTxt').textContent=fmtDate(S.lastSaved); }
 
 // ROLE
@@ -546,26 +590,35 @@ function renderHeader() {
   document.getElementById('saTag').classList.toggle('hidden',!ses.sa);
   let h='';
   if(ses.sa)h=`<button class="bs bsm" onclick="openLev()">📋 Levantamiento</button><button class="bs bsm" onclick="openOv('ovImport')">📥 Importar</button><button class="bs bsm" onclick="doExport()">📤 Exportar</button><button class="bp bsm" onclick="openAdd()">+ Agregar</button><button class="bic bsm" onclick="openConfig()" title="Config">⚙️</button>`;
-  else if(ses.role==='operador')h=`<button class="bs bsm" onclick="openLev()">📋 Levantamiento</button>${S.cfg.opCanAdd?`<button class="bp bsm" onclick="openAdd()">+ Agregar</button>`:''}<button class="bs bsm" onclick="doExport()">📤 Exportar</button>`;
-  else h=`<button class="bs bsm" onclick="doExport()">📤 Exportar</button>`;
+  else if(ses.role==='operador')h=`<button class="bs bsm" onclick="openLev()">📋 Levantamiento</button>${S.cfg.opCanAdd?`<button class="bp bsm" onclick="openAdd()">+ Agregar</button>`:''}`;
+  // visualizador: sin botones de acción
   document.getElementById('hacts').innerHTML=h;
 }
 function renderStats() {
   const all=S.items,total=all.length,units=all.reduce((s,i)=>s+ef(i),0),sinStock=all.filter(i=>ef(i)===0).length;
-  let html=`<div class="sc"><div class="sv">${total}</div><div class="sl">Ítems</div></div><div class="sc ok"><div class="sv">${units}</div><div class="sl">Unidades disponibles</div></div>`;
-  if(ses.sa){const conRet=all.filter(i=>(i.retirado||0)>0).length;html+=`<div class="sc w"><div class="sv">${conRet}</div><div class="sl">Con retiros</div></div>`;}
-  html+=`<div class="sc d"><div class="sv">${sinStock}</div><div class="sl">Sin stock</div></div>`;
-  document.getElementById('statsBar').innerHTML=html;
+  if(ses.sa) {
+    const conRet=all.filter(i=>(i.retirado||0)>0).length;
+    document.getElementById('statsBar').innerHTML=`<div class="sc"><div class="sv">${total}</div><div class="sl">Ítems</div></div><div class="sc ok"><div class="sv">${units}</div><div class="sl">Disponibles</div></div><div class="sc w"><div class="sv">${conRet}</div><div class="sl">Con retiros</div></div><div class="sc d"><div class="sv">${sinStock}</div><div class="sl">Sin stock</div></div>`;
+  } else if(ses.role==='operador') {
+    document.getElementById('statsBar').innerHTML=`<div class="sc ok"><div class="sv">${units}</div><div class="sl">Disponibles</div></div><div class="sc d"><div class="sv">${sinStock}</div><div class="sl">Sin stock</div></div>`;
+  } else {
+    document.getElementById('statsBar').innerHTML=''; // visualizador: sin stats
+  }
 }
 function renderFilters() {
-  const pos=[...new Set(S.items.map(i=>i.pos).filter(Boolean))].sort();
-  const estados=[...new Set(S.items.map(i=>i.condition).filter(Boolean))].sort();
-  const marcas=[...new Set(S.items.map(i=>i.brand).filter(Boolean))].sort();
-  const cur=id=>document.getElementById(id).value;
-  const opts=(arr,c,lbl)=>`<option value="">${lbl}</option>`+arr.map(v=>`<option value="${esc(v)}"${c===v?' selected':''}>${esc(v)}</option>`).join('');
-  document.getElementById('fPos').innerHTML=opts(pos,cur('fPos'),'Todas las posiciones');
-  document.getElementById('fEstado').innerHTML=opts(estados,cur('fEstado'),'Todos los estados');
-  document.getElementById('fMarca').innerHTML=opts(marcas,cur('fMarca'),'Todas las marcas');
+  const isAdvanced = ses.sa || ses.role==='operador';
+  const fd = document.getElementById('filterDropdowns');
+  fd.style.display = isAdvanced ? 'contents' : 'none';
+  if(isAdvanced) {
+    const pos=[...new Set(S.items.map(i=>i.pos).filter(Boolean))].sort();
+    const estados=[...new Set(S.items.map(i=>i.condition).filter(Boolean))].sort();
+    const marcas=[...new Set(S.items.map(i=>i.brand).filter(Boolean))].sort();
+    const cur=id=>document.getElementById(id).value;
+    const opts=(arr,c,lbl)=>`<option value="">${lbl}</option>`+arr.map(v=>`<option value="${esc(v)}"${c===v?' selected':''}>${esc(v)}</option>`).join('');
+    document.getElementById('fPos').innerHTML=opts(pos,cur('fPos'),'Todas las posiciones');
+    document.getElementById('fEstado').innerHTML=opts(estados,cur('fEstado'),'Todos los estados');
+    document.getElementById('fMarca').innerHTML=opts(marcas,cur('fMarca'),'Todas las marcas');
+  }
 }
 function renderTable() {
   const items=filtered();const sa=ses.sa,isOp=ses.role==='operador';
@@ -1099,11 +1152,28 @@ function posDiagnostic() {
 }
 
 // INIT
-load();
-computeStartRows();
-document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role===ses.role));
-applyTheme(localStorage.getItem('bodega_theme')||'noche');
-chkOnline();render();
+(async () => {
+  await _initKey();
+  await load();
+  computeStartRows();
+  document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role===ses.role));
+  applyTheme(localStorage.getItem('bodega_theme')||'noche');
+  chkOnline(); render();
+
+  // Back button: navigate within the app instead of exiting
+  history.pushState({app:true}, '');
+  window.addEventListener('popstate', () => {
+    history.pushState({app:true}, ''); // keep the entry so next back also fires
+    if(currentCell) {
+      currentCell = null;
+      document.getElementById('cellPanel').classList.add('hidden');
+      buildMapView();
+    } else if(ui.view === 'map') {
+      setView('table');
+    }
+    // at table with nothing open → stay, nothing to do
+  });
+})();
 </script>
 </body>
 </html>
