@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.9.5</title>
+  <title>Inventario v2.9.6</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -101,7 +101,7 @@
     .map-toolbar{display:flex;align-items:center;justify-content:space-between;background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:7px 12px;gap:8px;flex-wrap:wrap}
     .map-hint{font-size:.72rem;color:var(--mu)}
     .map-body{display:flex;gap:10px;align-items:flex-start}
-    .map-sidebar{width:155px;flex-shrink:0;display:flex;flex-direction:column;gap:6px}
+    .map-sidebar{width:165px;flex-shrink:0;display:flex;flex-direction:column;gap:6px}
     .floor2-btn{width:100%;padding:18px 8px;background:var(--s2);border:2px solid var(--bd);border-radius:var(--r);color:var(--tx);font-size:.78rem;font-weight:700;cursor:pointer;text-align:center;transition:all .15s;line-height:1.4}
     .floor2-btn:hover,.floor2-btn.active{border-color:var(--ac);background:rgba(59,130,246,.13);color:var(--ac)}
     .shelf-nav-btn{width:100%;padding:8px 6px;background:var(--s1);border:1px solid var(--bd);border-radius:6px;color:var(--mu);font-size:.74rem;font-weight:600;cursor:pointer;text-align:left;transition:all .15s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -110,13 +110,15 @@
     .map-main{flex:1;min-width:0;overflow-x:auto}
     /* ── PLANO DE BODEGA (sidebar) ── */
     .fp-plan{display:flex;flex-direction:column;gap:4px;padding:2px 0}
-    .fp-wall-shelf{display:block;width:100%;padding:9px 8px;background:var(--s2);border:2px solid var(--bd);border-radius:6px;color:var(--tx);font-size:.7rem;font-weight:700;cursor:pointer;text-align:center;line-height:1.5;transition:all .15s}
+    .fp-wall-shelf{display:block;width:100%;padding:12px 8px;background:var(--s2);border:2px solid var(--bd);border-radius:6px;color:var(--tx);font-size:.72rem;font-weight:700;cursor:pointer;text-align:center;line-height:1.5;transition:all .15s}
     .fp-wall-shelf:hover,.fp-wall-shelf.fp-active{border-color:var(--ac)!important;background:rgba(59,130,246,.15);color:var(--ac)}
     .fp-pair{display:flex;flex-direction:column;border-radius:6px;overflow:hidden;border:1.5px solid var(--bd)}
-    .fp-shelf{display:block;width:100%;padding:8px 6px;background:var(--s1);border:none;border-bottom:1px solid var(--bd);color:var(--mu);font-size:.7rem;font-weight:600;cursor:pointer;text-align:center;line-height:1.5;transition:all .12s}
+    .fp-shelf{display:block;width:100%;padding:10px 8px;background:var(--s1);border:none;border-bottom:1px solid var(--bd);color:var(--mu);font-size:.72rem;font-weight:600;cursor:pointer;text-align:center;line-height:1.5;transition:all .12s}
+    .fp-solo{display:block;width:100%;padding:10px 8px;background:var(--s1);border:1.5px solid var(--bd);border-radius:6px;color:var(--mu);font-size:.72rem;font-weight:600;cursor:pointer;text-align:center;line-height:1.5;transition:all .12s}
+    .fp-solo:hover,.fp-solo.fp-active{background:rgba(59,130,246,.15)!important;color:var(--tx)!important;border-color:var(--ac)!important}
     .fp-shelf:last-child{border-bottom:none}
     .fp-shelf:hover,.fp-shelf.fp-active{background:rgba(59,130,246,.15)!important;color:var(--tx)!important}
-    .fp-aisle-label{font-size:.58rem;color:var(--mu);text-align:center;padding:2px 0;letter-spacing:.06em;text-transform:uppercase;opacity:.55}
+    .fp-aisle-label{font-size:.6rem;color:var(--mu);text-align:center;padding:3px 0;letter-spacing:.06em;text-transform:uppercase;opacity:.55}
     .fp-shelf.fp-ok{background:rgba(34,197,94,.1)!important;color:var(--tx)}
     .fp-shelf.fp-warn{background:rgba(245,158,11,.1)!important;color:var(--tx)}
     .fp-shelf.fp-bad{background:rgba(239,68,68,.1)!important;color:var(--tx)}
@@ -196,7 +198,7 @@
     .tc{width:16px;height:16px;border-radius:50%;border:2.5px solid transparent;cursor:pointer;padding:0;flex-shrink:0;transition:transform .15s,border-color .15s;outline:none}
     .tc:hover{transform:scale(1.22)}
     .tc.active{border-color:var(--tx)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--tx) 20%,transparent)}
-    @media(max-width:700px){header{height:auto;padding:8px;flex-wrap:wrap}.cat-tabs,.vtog{order:10}.map-sidebar{width:120px}.shelf-nav-btn{font-size:.68rem}.fp-shelf,.fp-wall-shelf{font-size:.65rem}}
+    @media(max-width:700px){header{height:auto;padding:8px;flex-wrap:wrap}.cat-tabs,.vtog{order:10}.map-sidebar{width:130px}.shelf-nav-btn{font-size:.68rem}.fp-shelf,.fp-wall-shelf,.fp-solo{font-size:.66rem;padding:8px 5px}}
   </style>
 </head>
 <body>
@@ -208,7 +210,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.9.5</span>
+    <span class="vbadge" id="vbadge">v2.9.6</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -450,10 +452,22 @@
   </div>
 </div>
 
+<!-- MODAL PIN OPERADOR -->
+<div class="ov" id="ovOpPin">
+  <div class="modal sm">
+    <h2>🔑 Acceso Operador</h2>
+    <div class="fgrid one">
+      <div class="fg"><label>PIN de hoy (MMDD)</label><input type="password" id="opPinInput" placeholder="••••" maxlength="4" inputmode="numeric" oninput="if(this.value.length===4)doOpPin()" onkeydown="if(event.key==='Enter')doOpPin()" /></div>
+      <div id="opPinErr" style="color:var(--dan);font-size:.78rem;display:none">PIN incorrecto.</div>
+    </div>
+    <div class="mf"><button class="bs" onclick="closeOv('ovOpPin');document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role===ses.role))">Cancelar</button><button class="bp" onclick="doOpPin()">Entrar</button></div>
+  </div>
+</div>
+
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.9.5';
+const APP_VERSION = 'v2.9.6';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -469,6 +483,9 @@ const DEFAULT_SHELVES = [
 // prefix = prefijo del pos (case-insensitive); '' o null = catch-all (todo lo que no encaja en otra zona).
 const SPECIAL_ZONES = [
   { id:'taller', label:'Taller',   icon:'🔧', prefix:'taller' },
+  { id:'m1',     label:'Mueble 1', icon:'🗄', prefix:'mueble1', type:'furniture' },
+  { id:'m2',     label:'Mueble 2', icon:'🗄', prefix:'mueble2', type:'furniture' },
+  { id:'m3',     label:'Mueble 3', icon:'🗄', prefix:'mueble3', type:'furniture' },
   { id:'2do',    label:'2° Piso',  icon:'🏢', prefix:'' },
 ];
 
@@ -610,9 +627,31 @@ function syncTxt() { document.getElementById('syncTxt').textContent=fmtDate(S.la
 
 // ROLE
 function setRole(r) {
+  if(r==='operador'&&ses.role!=='operador'&&!ses.sa){
+    document.getElementById('opPinInput').value='';
+    document.getElementById('opPinErr').style.display='none';
+    openOv('ovOpPin');
+    setTimeout(()=>document.getElementById('opPinInput').focus(),80);
+    return;
+  }
   ses.role=r;sessionStorage.setItem('r',r);
   document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role===r));
   renderHeader();renderTable();
+}
+function doOpPin() {
+  const entered=document.getElementById('opPinInput').value;
+  const d=new Date();
+  const expected=String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  if(entered===expected){
+    closeOv('ovOpPin');
+    ses.role='operador';sessionStorage.setItem('r','operador');
+    document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role==='operador'));
+    renderHeader();renderTable();
+  }else{
+    document.getElementById('opPinErr').style.display='block';
+    document.getElementById('opPinInput').value='';
+    document.getElementById('opPinInput').focus();
+  }
 }
 function doLogin() {
   const v=document.getElementById('loginPwd').value;
@@ -627,6 +666,7 @@ function setView(v) {
   document.getElementById('viewTable').classList.toggle('hidden',v!=='table');
   document.getElementById('viewMap').classList.toggle('hidden',v!=='map');
   document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+  document.querySelector('.cat-tabs').classList.toggle('hidden',v==='map');
   if(v==='map') initOrRefreshMap();
 }
 function setCat(c) {
@@ -780,18 +820,19 @@ function renderDatalist() {
 let currentMapZone = null;
 
 function initOrRefreshMap() {
-  if(!currentMapZone){const sh=shelves();if(sh.length)currentMapZone=sh[0].id;}
   buildShelfNav();buildMapView();
 }
 
 function buildShelfNav() {
   const sh=shelves(),z=currentMapZone;
   const cids=allShelfCids();
+  const quickZones=SPECIAL_ZONES.filter(zn=>!zn.type||zn.type!=='furniture');
+  const furnitureZones=SPECIAL_ZONES.filter(zn=>zn.type==='furniture');
 
-  // Special zone buttons — compact row at top
+  // Quick zones (Taller, 2° Piso) — compact row at top
   document.getElementById('specialZonesEl').innerHTML=
     `<div style="display:flex;gap:4px;margin-bottom:8px">`+
-    SPECIAL_ZONES.map(zone=>{
+    quickZones.map(zone=>{
       const cnt=S.items.filter(i=>posZone(i.pos,cids)===zone.id).length;
       return`<button class="floor2-btn${z===zone.id?' active':''}" style="flex:1;padding:10px 4px;font-size:.68rem;line-height:1.4" onclick="selectMapZone('${zone.id}')">${zone.icon}<br>${esc(zone.label)}<br><span style="font-size:.6rem;opacity:.65">${cnt}</span></button>`;
     }).join('')+`</div>`;
@@ -831,7 +872,17 @@ function buildShelfNav() {
   if(mainSh.length){
     html+=`<div class="fp-aisle-label">— Pasillo ${mainSh[mainSh.length-1].aisle||'?'} —</div>`;
   }
-  html+=`<div class="fp-entrance">Entrada →</div></div>`;
+  html+=`<div class="fp-entrance">Entrada →</div>`;
+  // Furniture zones (Mueble 1, 2, 3…)
+  if(furnitureZones.length){
+    html+=`<div class="fp-aisle-label" style="margin-top:6px">— Muebles —</div>`;
+    for(const fz of furnitureZones){
+      const cnt=S.items.filter(i=>posZone(i.pos,cids)===fz.id).length;
+      const active=z===fz.id;
+      html+=`<button class="fp-solo ${active?'fp-active':''}" onclick="selectMapZone('${fz.id}')">${fz.icon} ${esc(fz.label)}<br><span style="font-size:.6rem;font-weight:400;opacity:.65">${cnt} ítem${cnt!==1?'s':''}</span></button>`;
+    }
+  }
+  html+=`</div>`;
   document.getElementById('shelfNavList').innerHTML=html;
 
   const mapped=S.items.filter(i=>cids.has(i.pos)).length;
@@ -933,11 +984,12 @@ function refreshMap3D(){buildMapView();}
 function locateOnMap(pos) {
   if(!pos)return;
   currentCell=pos;
+  document.getElementById('cellPanel').classList.add('hidden');
   const sh=shelfByRow(pos[0]);
   currentMapZone=sh?sh.id:(posZone(pos,allShelfCids())||SPECIAL_ZONES[SPECIAL_ZONES.length-1].id);
   setView('map');
-  buildShelfNav();buildMapView();renderCellPanel(pos);
-  setTimeout(()=>document.getElementById('cellPanel')?.scrollIntoView({behavior:'smooth',block:'nearest'}),80);
+  buildShelfNav();buildMapView();
+  setTimeout(()=>document.getElementById('viewMap')?.scrollIntoView({behavior:'smooth',block:'start'}),60);
 }
 
 function renderCellPanel(cid) {
@@ -1102,8 +1154,8 @@ document.getElementById('vbadge').addEventListener('click',()=>{
   if(ses.sa)return;sc++;clearTimeout(st);st=setTimeout(()=>sc=0,3000);
   if(sc>=5){sc=0;document.getElementById('loginPwd').value='';document.getElementById('loginErr').style.display='none';openOv('ovLogin');setTimeout(()=>document.getElementById('loginPwd').focus(),80);}
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape')['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev','ovQuickMove'].forEach(closeOv);});
-['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev','ovQuickMove'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))closeOv(id);});});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev','ovQuickMove','ovOpPin'].forEach(closeOv);});
+['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev','ovQuickMove','ovOpPin'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))closeOv(id);});});
 
 // ITEM CRUD
 function openAdd(prefillPos) {
