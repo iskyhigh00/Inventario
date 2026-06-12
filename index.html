@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.9.4</title>
+  <title>Inventario v2.9.5</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -101,13 +101,29 @@
     .map-toolbar{display:flex;align-items:center;justify-content:space-between;background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:7px 12px;gap:8px;flex-wrap:wrap}
     .map-hint{font-size:.72rem;color:var(--mu)}
     .map-body{display:flex;gap:10px;align-items:flex-start}
-    .map-sidebar{width:130px;flex-shrink:0;display:flex;flex-direction:column;gap:6px}
+    .map-sidebar{width:155px;flex-shrink:0;display:flex;flex-direction:column;gap:6px}
     .floor2-btn{width:100%;padding:18px 8px;background:var(--s2);border:2px solid var(--bd);border-radius:var(--r);color:var(--tx);font-size:.78rem;font-weight:700;cursor:pointer;text-align:center;transition:all .15s;line-height:1.4}
     .floor2-btn:hover,.floor2-btn.active{border-color:var(--ac);background:rgba(59,130,246,.13);color:var(--ac)}
     .shelf-nav-btn{width:100%;padding:8px 6px;background:var(--s1);border:1px solid var(--bd);border-radius:6px;color:var(--mu);font-size:.74rem;font-weight:600;cursor:pointer;text-align:left;transition:all .15s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .shelf-nav-btn:hover{border-color:var(--ac);color:var(--tx)}
     .shelf-nav-btn.active{background:rgba(59,130,246,.15);border-color:var(--ac);color:var(--tx)}
     .map-main{flex:1;min-width:0;overflow-x:auto}
+    /* ── PLANO DE BODEGA (sidebar) ── */
+    .fp-plan{display:flex;flex-direction:column;gap:4px;padding:2px 0}
+    .fp-wall-shelf{display:block;width:100%;padding:9px 8px;background:var(--s2);border:2px solid var(--bd);border-radius:6px;color:var(--tx);font-size:.7rem;font-weight:700;cursor:pointer;text-align:center;line-height:1.5;transition:all .15s}
+    .fp-wall-shelf:hover,.fp-wall-shelf.fp-active{border-color:var(--ac)!important;background:rgba(59,130,246,.15);color:var(--ac)}
+    .fp-pair{display:flex;flex-direction:column;border-radius:6px;overflow:hidden;border:1.5px solid var(--bd)}
+    .fp-shelf{display:block;width:100%;padding:8px 6px;background:var(--s1);border:none;border-bottom:1px solid var(--bd);color:var(--mu);font-size:.7rem;font-weight:600;cursor:pointer;text-align:center;line-height:1.5;transition:all .12s}
+    .fp-shelf:last-child{border-bottom:none}
+    .fp-shelf:hover,.fp-shelf.fp-active{background:rgba(59,130,246,.15)!important;color:var(--tx)!important}
+    .fp-aisle-label{font-size:.58rem;color:var(--mu);text-align:center;padding:2px 0;letter-spacing:.06em;text-transform:uppercase;opacity:.55}
+    .fp-shelf.fp-ok{background:rgba(34,197,94,.1)!important;color:var(--tx)}
+    .fp-shelf.fp-warn{background:rgba(245,158,11,.1)!important;color:var(--tx)}
+    .fp-shelf.fp-bad{background:rgba(239,68,68,.1)!important;color:var(--tx)}
+    .fp-wall-shelf.fp-ok{border-color:rgba(34,197,94,.5)!important}
+    .fp-wall-shelf.fp-warn{border-color:rgba(245,158,11,.5)!important}
+    .fp-wall-shelf.fp-bad{border-color:rgba(239,68,68,.5)!important}
+    .fp-entrance{font-size:.58rem;color:var(--mu);text-align:right;opacity:.45;padding:3px 2px;letter-spacing:.04em}
     .map-cell{border-radius:5px;border:1.5px solid var(--bd);background:var(--s2);cursor:pointer;padding:6px 7px;min-height:58px;transition:border-color .12s,background .12s;display:flex;flex-direction:column;gap:2px}
     .map-cell:hover{border-color:var(--ac)}
     .map-cell.mc-active{border-color:var(--ac)!important;box-shadow:0 0 0 2px rgba(59,130,246,.3)}
@@ -180,7 +196,7 @@
     .tc{width:16px;height:16px;border-radius:50%;border:2.5px solid transparent;cursor:pointer;padding:0;flex-shrink:0;transition:transform .15s,border-color .15s;outline:none}
     .tc:hover{transform:scale(1.22)}
     .tc.active{border-color:var(--tx)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--tx) 20%,transparent)}
-    @media(max-width:700px){header{height:auto;padding:8px;flex-wrap:wrap}.cat-tabs,.vtog{order:10}.map-sidebar{width:100px}.shelf-nav-btn{font-size:.68rem}}
+    @media(max-width:700px){header{height:auto;padding:8px;flex-wrap:wrap}.cat-tabs,.vtog{order:10}.map-sidebar{width:120px}.shelf-nav-btn{font-size:.68rem}.fp-shelf,.fp-wall-shelf{font-size:.65rem}}
   </style>
 </head>
 <body>
@@ -192,7 +208,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.9.4</span>
+    <span class="vbadge" id="vbadge">v2.9.5</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -437,7 +453,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.9.4';
+const APP_VERSION = 'v2.9.5';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -722,7 +738,7 @@ function renderTable() {
     return`<tr ondblclick="if(event.target.tagName!=='BUTTON')locateOnMap('${esc(item.pos||'')}')" style="cursor:default"><td style="padding-right:4px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${catColor}"></span></td><td><span class="pos-chip" onclick="locateOnMap('${esc(item.pos||'')}')">${esc(item.pos||'—')}</span></td><td><div style="font-weight:600">${esc(item.name)}</div>${(item.brand||item.model)?`<div style="font-size:.7rem;color:var(--mu)">${[item.brand,item.model].filter(Boolean).map(esc).join(' · ')}</div>`:''}</td><td>${condBadge(item.condition)}</td><td>${stockBadge}</td><td>${acts}</td></tr>`;
   };
 
-  const collapsible=ui.group==='brand'||ui.group==='pos';
+  const collapsible=!!ui.group;
   const grpHdr=(key,cnt,units)=>{
     const open=!collapsible||!!ui.openGroups[key];
     const arrow=collapsible?(open?'▾ ':'▸ '):'';
@@ -771,18 +787,65 @@ function initOrRefreshMap() {
 function buildShelfNav() {
   const sh=shelves(),z=currentMapZone;
   const cids=allShelfCids();
-  // Special zone cards
-  document.getElementById('specialZonesEl').innerHTML=SPECIAL_ZONES.map(zone=>{
-    const cnt=S.items.filter(i=>posZone(i.pos,cids)===zone.id).length;
-    return`<button class="floor2-btn${z===zone.id?' active':''}" onclick="selectMapZone('${zone.id}')">${zone.icon}<br>${esc(zone.label)}<br><span style="font-size:.65rem;opacity:.7">${cnt} ítem${cnt!==1?'s':''}</span></button>`;
-  }).join('');
-  // Shelf buttons
-  document.getElementById('shelfNavList').innerHTML=sh.map(s=>
-    `<button class="shelf-nav-btn${z===s.id?' active':''}" onclick="selectMapZone('${esc(s.id)}')">${esc(s.label||s.id)}</button>`
-  ).join('');
+
+  // Special zone buttons — compact row at top
+  document.getElementById('specialZonesEl').innerHTML=
+    `<div style="display:flex;gap:4px;margin-bottom:8px">`+
+    SPECIAL_ZONES.map(zone=>{
+      const cnt=S.items.filter(i=>posZone(i.pos,cids)===zone.id).length;
+      return`<button class="floor2-btn${z===zone.id?' active':''}" style="flex:1;padding:10px 4px;font-size:.68rem;line-height:1.4" onclick="selectMapZone('${zone.id}')">${zone.icon}<br>${esc(zone.label)}<br><span style="font-size:.6rem;opacity:.65">${cnt}</span></button>`;
+    }).join('')+`</div>`;
+
+  // Sort shelves by label number (same as computeStartRows)
+  const lnum=s=>{const m=(s.label||s.id).match(/(\d+)\s*([A-Z]?)/i);if(!m)return 9999;return parseInt(m[1])*100+(m[2]?m[2].toUpperCase().charCodeAt(0)-64:0);};
+  const sorted=[...sh].sort((a,b)=>lnum(a)-lnum(b));
+  const wallSh=sorted.filter(s=>s.wall);
+  const mainSh=sorted.filter(s=>!s.wall);
+
+  let html=`<div class="fp-plan">`;
+
+  // Wall shelf at the top (pared)
+  for(const ws of wallSh){
+    const rows=rowLabels(ws);
+    const rng=rows.length?`${rows[0]}–${rows[rows.length-1]}`:'';
+    const cnt=S.items.filter(i=>rows.includes(i.pos?.[0])).length;
+    const active=z===ws.id;
+    const st=_fpShelfStatus(ws);
+    html+=`<button class="fp-wall-shelf ${active?'fp-active':st}" onclick="selectMapZone('${esc(ws.id)}')">${esc(ws.label||ws.id)}<br><span style="font-size:.6rem;font-weight:400;opacity:.65">filas ${rng} · ${cnt} ítem${cnt!==1?'s':''}</span></button>`;
+  }
+
+  // Non-wall shelves in back-to-back pairs with aisle labels
+  for(let i=0;i<mainSh.length;i+=2){
+    const s1=mainSh[i],s2=mainSh[i+1];
+    html+=`<div class="fp-aisle-label">— Pasillo ${s1.aisle||'?'} —</div><div class="fp-pair">`;
+    for(const s of [s1,s2].filter(Boolean)){
+      const rows=rowLabels(s);
+      const rng=rows.length?`${rows[0]}–${rows[rows.length-1]}`:'';
+      const cnt=S.items.filter(i=>rows.includes(i.pos?.[0])).length;
+      const active=z===s.id;
+      const st=_fpShelfStatus(s);
+      html+=`<button class="fp-shelf ${active?'fp-active':st}" onclick="selectMapZone('${esc(s.id)}')">${esc(s.label||s.id)}<br><span style="font-size:.6rem;font-weight:400;opacity:.65">filas ${rng} · ${cnt}</span></button>`;
+    }
+    html+=`</div>`;
+  }
+  if(mainSh.length){
+    html+=`<div class="fp-aisle-label">— Pasillo ${mainSh[mainSh.length-1].aisle||'?'} —</div>`;
+  }
+  html+=`<div class="fp-entrance">Entrada →</div></div>`;
+  document.getElementById('shelfNavList').innerHTML=html;
+
   const mapped=S.items.filter(i=>cids.has(i.pos)).length;
   const mc=document.getElementById('mapItemCount');
   if(mc)mc.textContent=`${mapped} de ${S.items.length} ítems en el mapa`;
+}
+
+function _fpShelfStatus(sh){
+  const rows=rowLabels(sh);
+  const all=S.items.filter(i=>rows.includes(i.pos?.[0]));
+  if(!all.length)return'';
+  if(all.some(i=>ef(i)===0))return'fp-bad';
+  if(all.some(i=>(i.retirado||0)>0))return'fp-warn';
+  return'fp-ok';
 }
 
 function selectMapZone(zoneId) {
