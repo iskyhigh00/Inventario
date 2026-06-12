@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.9.2</title>
+  <title>Inventario v2.9.3</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -62,17 +62,39 @@
     .tr2{text-align:right;color:var(--warn);font-weight:700}.tr2.z{color:var(--mu);font-weight:400}
     .badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:.68rem;font-weight:700;white-space:nowrap}
     .bg{background:rgba(34,197,94,.13);color:#4ade80}.by{background:rgba(234,179,8,.13);color:#facc15}.br{background:rgba(239,68,68,.13);color:#f87171}.bmu{background:rgba(148,163,184,.1);color:var(--mu)}
-    .pos-chip{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:2px 7px;font-size:.72rem;font-weight:600;color:var(--ac);white-space:nowrap;cursor:pointer;transition:border-color .15s,background .15s}
+    .pos-chip{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:4px 9px;font-size:.74rem;font-weight:600;color:var(--ac);white-space:nowrap;cursor:pointer;transition:border-color .15s,background .15s}
     .pos-chip:hover{border-color:var(--ac);background:var(--bd)}
     .cat-dot{font-size:.68rem;color:var(--mu)}
-    .ra{display:flex;gap:4px;justify-content:flex-end;opacity:0;transition:opacity .15s}
-    tr:hover .ra{opacity:1}
-    .qc{display:flex;align-items:center;gap:5px;justify-content:flex-end}
-    .qc button{padding:2px 7px;font-size:.8rem;font-weight:700}
-    .qv{min-width:28px;text-align:center;font-weight:700}
+    .ra{display:flex;gap:4px;justify-content:flex-end;opacity:1;transition:opacity .15s}
+    .qc{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+    .qc button{padding:5px 12px;font-size:.88rem;font-weight:800;min-width:36px;min-height:36px}
+    .qv{min-width:32px;text-align:center;font-weight:800;font-size:.95rem}
+    td{padding:10px 11px;vertical-align:middle}
     .empty{text-align:center;padding:50px 20px;color:var(--mu)}
     .empty .ei{font-size:2.2rem;margin-bottom:8px}
     .empty p{font-size:.85rem}
+    /* ── BARRA RÁPIDA (Retirar / Devolver) ── */
+    #quickBar{display:none;gap:8px;padding:8px 14px;background:var(--s1);border-bottom:2px solid var(--bd)}
+    #quickBar.visible{display:flex}
+    .qbar-btn{flex:1;padding:13px 8px;border-radius:10px;font-size:.88rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s;border-width:2px;border-style:solid}
+    .qbar-ret{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.45);color:#f87171}
+    .qbar-ret:hover,.qbar-ret:active{background:rgba(239,68,68,.25);border-color:#ef4444}
+    .qbar-dev{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.45);color:#4ade80}
+    .qbar-dev:hover,.qbar-dev:active{background:rgba(34,197,94,.25);border-color:#22c55e}
+    /* ── AGRUPACIÓN ── */
+    .grp-chips{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+    .grp-chip{padding:4px 11px;background:transparent;border:1px solid var(--bd);border-radius:20px;color:var(--mu);font-size:.74rem;font-weight:600;cursor:pointer;transition:all .15s}
+    .grp-chip:hover{border-color:var(--ac);color:var(--tx)}
+    .grp-chip.active{background:var(--s2);border-color:var(--ac);color:var(--tx)}
+    .grp-hdr td{background:var(--s2);color:var(--mu);font-size:.7rem;font-weight:700;padding:5px 11px;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--bd)}
+    /* ── MODAL MOVIMIENTO RÁPIDO ── */
+    .qm-item-card{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:11px 14px;cursor:pointer;transition:border-color .12s;display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .qm-item-card:hover,.qm-item-card:active{border-color:var(--ac)}
+    .qm-item-card.selected{border-color:var(--ac);background:rgba(59,130,246,.08)}
+    .qm-name{font-size:.9rem;font-weight:700}
+    .qm-meta{font-size:.72rem;color:var(--mu);margin-top:2px}
+    .qm-qty-btn{width:54px;height:54px;font-size:1.6rem;font-weight:700;background:var(--s2);border:1px solid var(--bd);border-radius:10px;color:var(--tx);display:flex;align-items:center;justify-content:center;padding:0}
+    .qm-qty-btn:hover{background:var(--bd)}
 
     /* ── MAPA ── */
     .map-wrap{display:flex;flex-direction:column;gap:10px}
@@ -170,7 +192,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.9.2</span>
+    <span class="vbadge" id="vbadge">v2.9.3</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -201,6 +223,12 @@
   <div class="hacts" id="hacts"></div>
 </header>
 
+<!-- BARRA RÁPIDA: solo operador/obrist -->
+<div id="quickBar">
+  <button class="qbar-btn qbar-ret" onclick="openQuickMove('salida')">📤 <span>Retirar material</span></button>
+  <button class="qbar-btn qbar-dev" onclick="openQuickMove('entrada')">📥 <span>Devolver material</span></button>
+</div>
+
 <main>
   <div class="stats" id="statsBar"></div>
 
@@ -214,6 +242,13 @@
         <select id="fMarca"  onchange="applyFilters()"><option value="">Todas las marcas</option></select>
       </span>
       <button id="hideEmptyBtn" class="bsm bp" onclick="toggleHideEmpty()" title="Mostrar u ocultar ítems sin stock">Sin stock: ocultos</button>
+    </div>
+    <div class="grp-chips">
+      <span class="fl">Agrupar:</span>
+      <button class="grp-chip active" data-group="" onclick="setGroup('')">Lista</button>
+      <button class="grp-chip" data-group="category" onclick="setGroup('category')">Tipo</button>
+      <button class="grp-chip" data-group="pos" onclick="setGroup('pos')">Posición</button>
+      <button class="grp-chip" data-group="brand" onclick="setGroup('brand')">Marca</button>
     </div>
     <div class="twrap">
       <table><thead id="thead"></thead><tbody id="tbody"></tbody></table>
@@ -370,10 +405,39 @@
   </div>
 </div>
 
+<!-- MODAL MOVIMIENTO RÁPIDO -->
+<div class="ov" id="ovQuickMove">
+  <div class="modal" style="width:420px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h2 id="qmTitle">📤 Retirar material</h2>
+      <button class="bic bsm" onclick="closeOv('ovQuickMove')">✕</button>
+    </div>
+    <!-- Paso 1: buscar ítem -->
+    <div id="qmStep1">
+      <input type="text" id="qmInput" placeholder="Buscar artículo…" oninput="qmovFilter()" autocomplete="off"
+        style="width:100%;padding:11px 14px;font-size:1rem;background:var(--bg);border:1.5px solid var(--bd);border-radius:8px;color:var(--tx);outline:none;margin-bottom:10px" />
+      <div id="qmResults" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+    <!-- Paso 2: cantidad -->
+    <div id="qmStep2" class="hidden">
+      <div id="qmSelectedCard" style="margin-bottom:16px"></div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:18px">
+        <button class="qm-qty-btn" onclick="qmovAdj(-1)">−</button>
+        <span id="qmQtyDisplay" style="font-size:2.2rem;font-weight:800;min-width:64px;text-align:center">1</span>
+        <button class="qm-qty-btn" onclick="qmovAdj(1)">+</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="bs" style="flex:1;padding:11px" onclick="qmovBack()">← Cambiar</button>
+        <button id="qmConfirmBtn" class="bp" style="flex:2;padding:11px;font-size:.95rem" onclick="qmovConfirm()">✓ Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.9.2';
+const APP_VERSION = 'v2.9.3';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -413,9 +477,10 @@ function zoneLabelForPos(pos) {
 
 let S = { lastSaved:null, cfg:{ pwdHash:btoa('obrist'), opCanAdd:false, shelves:null }, items:[] };
 let ses = { role:sessionStorage.getItem('r')||'visualizador', sa:sessionStorage.getItem('sa')==='1' };
-let ui = { cat:'all', sc:'pos', sd:1, view:'table', hideEmpty:true };
+let ui = { cat:'all', sc:'pos', sd:1, view:'table', hideEmpty:true, group:'' };
 let pendingImport = null;
 let currentCell  = null;
+let qmState = {type:null, itemId:null, qty:1};
 
 const genId = () => Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 const esc   = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -588,10 +653,11 @@ function render() { renderHeader();renderStats();renderFilters();renderTable();r
 
 function renderHeader() {
   document.getElementById('saTag').classList.toggle('hidden',!ses.sa);
+  const canAct = ses.sa || ses.role==='operador';
+  document.getElementById('quickBar').classList.toggle('visible', canAct);
   let h='';
   if(ses.sa)h=`<button class="bs bsm" onclick="openLev()">📋 Levantamiento</button><button class="bs bsm" onclick="openOv('ovImport')">📥 Importar</button><button class="bs bsm" onclick="doExport()">📤 Exportar</button><button class="bp bsm" onclick="openAdd()">+ Agregar</button><button class="bic bsm" onclick="openConfig()" title="Config">⚙️</button>`;
   else if(ses.role==='operador')h=`<button class="bs bsm" onclick="openLev()">📋 Levantamiento</button>${S.cfg.opCanAdd?`<button class="bp bsm" onclick="openAdd()">+ Agregar</button>`:''}`;
-  // visualizador: sin botones de acción
   document.getElementById('hacts').innerHTML=h;
 }
 function renderStats() {
@@ -620,6 +686,12 @@ function renderFilters() {
     document.getElementById('fMarca').innerHTML=opts(marcas,cur('fMarca'),'Todas las marcas');
   }
 }
+function setGroup(g) {
+  ui.group=g;
+  document.querySelectorAll('.grp-chip').forEach(b=>b.classList.toggle('active',b.dataset.group===g));
+  renderTable();
+}
+
 function renderTable() {
   const items=filtered();const sa=ses.sa,isOp=ses.role==='operador';
   const si=(c,l)=>`<th class="${ui.sc===c?'sorted':''}" onclick="sortBy('${c}')">${l}${ui.sc===c?(ui.sd===1?' ↑':' ↓'):''}</th>`;
@@ -627,28 +699,45 @@ function renderTable() {
   if(!items.length){document.getElementById('tbody').innerHTML='';empty.classList.remove('hidden');return;}
   empty.classList.add('hidden');
 
+  // Row builders
+  const saRow=item=>{
+    const efv=ef(item),ret=item.retirado||0,isH=item.category==='Herramientas';
+    const acts=`<div class="ra"><button class="bic bsm" onclick="openEdit('${item.id}')">✎</button><button class="bic bsm" style="color:var(--dan)" onclick="delItem('${item.id}')">✕</button></div>`;
+    const cats=[...new Set(items.map(i=>i.category))];const showBR=cats.some(c=>c!=='Herramientas');
+    return`<tr ondblclick="if(event.target.tagName!=='BUTTON')locateOnMap('${esc(item.pos||'')}')" style="cursor:default"><td><span class="cat-dot">${esc(item.category||'')}</span></td><td><span class="pos-chip" onclick="locateOnMap('${esc(item.pos||'')}')">${esc(item.pos||'—')}</span></td><td><div style="font-weight:600">${esc(item.name)}</div>${item.notes?`<div style="font-size:.7rem;color:var(--mu)">${esc(item.notes)}</div>`:''}</td><td style="color:var(--mu)">${esc(item.brand||'')}</td><td>${condBadge(item.condition)}</td><td style="color:var(--mu)">${esc(item.model||'')}</td>${showBR?`<td class="tn">${isH?'—':item.bodega||0}</td>`:''}${showBR?`<td class="tr2 ${ret===0?'z':''}">${isH?'—':ret||0}</td>`:''}<td class="tb" style="${efv===0?'color:var(--dan)':''}">${efv}</td><td style="text-align:right;color:var(--mu)">${item.real!=null?item.real:''}</td><td>${acts}</td></tr>`;
+  };
+  const simRow=item=>{
+    const efv=ef(item),isH=item.category==='Herramientas';
+    const sc=efv===0?'br':efv<=2?'by':'bg';
+    const stockBadge=`<span class="badge ${sc}">${efv===0?'Sin stock':efv}</span>`;
+    let acts='';
+    if(isOp) acts=isH
+      ?`<div class="qc"><button class="bic bsm" onclick="adjH('${item.id}',-1)">−</button><span class="qv">${efv}</span><button class="bic bsm" onclick="adjH('${item.id}',1)">+</button></div>`
+      :`<div class="ra"><button class="bs bsm" onclick="openMov('${item.id}','entrada')">↑</button><button class="bs bsm" style="color:var(--warn);border-color:var(--warn)" onclick="openMov('${item.id}','salida')">↓</button></div>`;
+    const catColor=item.category==='Repuestos'?'#3b82f6':item.category==='Herramientas'?'#a78bfa':'#4ade80';
+    return`<tr ondblclick="if(event.target.tagName!=='BUTTON')locateOnMap('${esc(item.pos||'')}')" style="cursor:default"><td style="padding-right:4px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${catColor}"></span></td><td><span class="pos-chip" onclick="locateOnMap('${esc(item.pos||'')}')">${esc(item.pos||'—')}</span></td><td><div style="font-weight:600">${esc(item.name)}</div>${(item.brand||item.model)?`<div style="font-size:.7rem;color:var(--mu)">${[item.brand,item.model].filter(Boolean).map(esc).join(' · ')}</div>`:''}</td><td>${condBadge(item.condition)}</td><td>${stockBadge}</td><td>${acts}</td></tr>`;
+  };
+
+  const grpHdr=(label,cnt,units)=>`<tr class="grp-hdr"><td colspan="10"><span>${esc(label)}</span><span style="color:var(--mu);font-weight:400;margin-left:8px">${cnt} ítem${cnt!==1?'s':''} · ${units} uds</span></td></tr>`;
+  const grpKey=ui.group==='category'?'category':ui.group==='brand'?'brand':ui.group==='pos'?'pos':'';
+
   if(sa) {
-    // Vista completa Obrist
     const cats=[...new Set(items.map(i=>i.category))];const showBR=cats.some(c=>c!=='Herramientas');
     document.getElementById('thead').innerHTML=`<tr>${si('category','Cat')}${si('pos','POS')}${si('name','Artículo')}${si('brand','Marca')}${si('condition','Estado')}${si('model','Modelo')}${showBR?si('bodega','Bodega'):''}${showBR?si('retirado','Retirado'):''}${si('ef','Stock')}${si('real','REAL')}<th></th></tr>`;
-    document.getElementById('tbody').innerHTML=items.map(item=>{
-      const efv=ef(item),ret=item.retirado||0,isH=item.category==='Herramientas';
-      const acts=`<div class="ra"><button class="bic bsm" onclick="openEdit('${item.id}')">✎</button><button class="bic bsm" style="color:var(--dan)" onclick="delItem('${item.id}')">✕</button></div>`;
-      return`<tr ondblclick="if(event.target.tagName!=='BUTTON')locateOnMap('${esc(item.pos||'')}')" style="cursor:default"><td><span class="cat-dot">${esc(item.category||'')}</span></td><td><span class="pos-chip" onclick="locateOnMap('${esc(item.pos||'')}')" title="Ver en mapa">${esc(item.pos||'—')}</span></td><td><div style="font-weight:600">${esc(item.name)}</div>${item.notes?`<div style="font-size:.7rem;color:var(--mu)">${esc(item.notes)}</div>`:''}</td><td style="color:var(--mu)">${esc(item.brand||'')}</td><td>${condBadge(item.condition)}</td><td style="color:var(--mu)">${esc(item.model||'')}</td>${showBR?`<td class="tn">${isH?'—':item.bodega||0}</td>`:''}${showBR?`<td class="tr2 ${ret===0?'z':''}">${isH?'—':ret||0}</td>`:''}<td class="tb" style="${efv===0?'color:var(--dan)':''}">${efv}</td><td style="text-align:right;color:var(--mu)">${item.real!=null?item.real:''}</td><td>${acts}</td></tr>`;
-    }).join('');
+    if(grpKey) {
+      const groups={};for(const i of items){const k=i[grpKey]||'—';if(!groups[k])groups[k]=[];groups[k].push(i);}
+      document.getElementById('tbody').innerHTML=Object.keys(groups).sort().map(k=>{const g=groups[k];return grpHdr(k,g.length,g.reduce((s,i)=>s+ef(i),0))+g.map(saRow).join('');}).join('');
+    } else {
+      document.getElementById('tbody').innerHTML=items.map(saRow).join('');
+    }
   } else {
-    // Vista simplificada
     document.getElementById('thead').innerHTML=`<tr>${si('category','')}${si('pos','Ubicación')}${si('name','Artículo')}${si('condition','Estado')}${si('ef','Stock')}<th></th></tr>`;
-    document.getElementById('tbody').innerHTML=items.map(item=>{
-      const efv=ef(item),isH=item.category==='Herramientas';
-      const sc=efv===0?'br':efv<=2?'by':'bg';
-      const stockBadge=`<span class="badge ${sc}">${efv===0?'Sin stock':efv}</span>`;
-      let acts='';
-      if(isOp) acts=isH
-        ?`<div class="qc"><button class="bic bsm" onclick="adjH('${item.id}',-1)">−</button><span class="qv">${efv}</span><button class="bic bsm" onclick="adjH('${item.id}',1)">+</button></div>`
-        :`<div class="ra" style="opacity:1"><button class="bs bsm" onclick="openMov('${item.id}','entrada')">↑ Entrada</button><button class="bs bsm" style="color:var(--warn);border-color:var(--warn)" onclick="openMov('${item.id}','salida')">↓ Salida</button></div>`;
-      return`<tr ondblclick="if(event.target.tagName!=='BUTTON')locateOnMap('${esc(item.pos||'')}')" style="cursor:default"><td style="padding-right:4px"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${item.category==='Repuestos'?'#3b82f6':item.category==='Herramientas'?'#a78bfa':'#4ade80'}"></span></td><td><span class="pos-chip" onclick="locateOnMap('${esc(item.pos||'')}')" title="Ver en mapa">${esc(item.pos||'—')}</span></td><td><div style="font-weight:600">${esc(item.name)}</div>${(item.brand||item.model)?`<div style="font-size:.7rem;color:var(--mu)">${[item.brand,item.model].filter(Boolean).map(esc).join(' · ')}</div>`:''}</td><td>${condBadge(item.condition)}</td><td>${stockBadge}</td><td>${acts}</td></tr>`;
-    }).join('');
+    if(grpKey) {
+      const groups={};for(const i of items){const k=i[grpKey]||'—';if(!groups[k])groups[k]=[];groups[k].push(i);}
+      document.getElementById('tbody').innerHTML=Object.keys(groups).sort().map(k=>{const g=groups[k];return grpHdr(k,g.length,g.reduce((s,i)=>s+ef(i),0))+g.map(simRow).join('');}).join('');
+    } else {
+      document.getElementById('tbody').innerHTML=items.map(simRow).join('');
+    }
   }
 }
 function renderDatalist() {
@@ -937,8 +1026,8 @@ document.getElementById('vbadge').addEventListener('click',()=>{
   if(ses.sa)return;sc++;clearTimeout(st);st=setTimeout(()=>sc=0,3000);
   if(sc>=5){sc=0;document.getElementById('loginPwd').value='';document.getElementById('loginErr').style.display='none';openOv('ovLogin');setTimeout(()=>document.getElementById('loginPwd').focus(),80);}
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape')['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev'].forEach(closeOv);});
-['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))closeOv(id);});});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev','ovQuickMove'].forEach(closeOv);});
+['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev','ovQuickMove'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))closeOv(id);});});
 
 // ITEM CRUD
 function openAdd(prefillPos) {
@@ -979,6 +1068,80 @@ function saveItem() {
 function delItem(id) {
   if(!confirm('¿Eliminar este ítem?'))return;
   S.items=S.items.filter(i=>i.id!==id);save();render();if(ui.view==='map'){buildShelfNav();buildMapView();if(currentCell)renderCellPanel(currentCell);}
+}
+
+// ── MOVIMIENTO RÁPIDO (Retirar / Devolver) ────────────────────────────────────
+function openQuickMove(type) {
+  qmState={type,itemId:null,qty:1};
+  document.getElementById('qmTitle').textContent=type==='salida'?'📤 Retirar material':'📥 Devolver material';
+  document.getElementById('qmInput').value='';
+  document.getElementById('qmStep1').classList.remove('hidden');
+  document.getElementById('qmStep2').classList.add('hidden');
+  qmovFilter();
+  openOv('ovQuickMove');
+  setTimeout(()=>document.getElementById('qmInput').focus(),80);
+}
+function qmovFilter() {
+  const q=(document.getElementById('qmInput').value||'').toLowerCase();
+  const items=S.items.filter(i=>{
+    if(qmState.type==='salida'&&ef(i)===0)return false;
+    if(!q)return true;
+    return[i.name,i.brand,i.pos,i.model,i.notes].join(' ').toLowerCase().includes(q);
+  }).slice(0,40);
+  document.getElementById('qmResults').innerHTML=items.length
+    ?items.map(item=>{
+        const efv=ef(item);
+        const sc=efv===0?'var(--dan)':efv<=2?'var(--warn)':'var(--ok)';
+        return`<div class="qm-item-card" onclick="qmovSelectItem('${item.id}')">
+          <div><div class="qm-name">${esc(item.name)}</div><div class="qm-meta">${[item.pos,item.brand,item.category].filter(Boolean).map(esc).join(' · ')}</div></div>
+          <div style="font-size:1.1rem;font-weight:800;color:${sc};white-space:nowrap">${efv}&nbsp;uds</div>
+        </div>`;
+      }).join('')
+    :`<div style="text-align:center;padding:24px;color:var(--mu);font-size:.84rem">Sin resultados</div>`;
+}
+function qmovSelectItem(id) {
+  const item=S.items.find(i=>i.id===id);if(!item)return;
+  qmState.itemId=id;qmState.qty=1;
+  const efv=ef(item);
+  const sc=efv===0?'var(--dan)':efv<=2?'var(--warn)':'var(--ok)';
+  document.getElementById('qmSelectedCard').innerHTML=`
+    <div class="qm-item-card selected" style="cursor:default">
+      <div><div class="qm-name">${esc(item.name)}</div><div class="qm-meta">${[item.pos,item.brand,item.category].filter(Boolean).map(esc).join(' · ')}</div></div>
+      <div style="font-size:1.1rem;font-weight:800;color:${sc};white-space:nowrap">${efv}&nbsp;uds</div>
+    </div>`;
+  document.getElementById('qmQtyDisplay').textContent='1';
+  const lbl=qmState.type==='salida'?'📤 Retirar':'📥 Devolver';
+  document.getElementById('qmConfirmBtn').textContent=`${lbl} ${qmState.qty}`;
+  document.getElementById('qmStep1').classList.add('hidden');
+  document.getElementById('qmStep2').classList.remove('hidden');
+}
+function qmovAdj(delta) {
+  const item=S.items.find(i=>i.id===qmState.itemId);
+  const maxQty=qmState.type==='salida'?(ef(item)||1):999;
+  qmState.qty=Math.min(maxQty,Math.max(1,qmState.qty+delta));
+  document.getElementById('qmQtyDisplay').textContent=qmState.qty;
+  const lbl=qmState.type==='salida'?'📤 Retirar':'📥 Devolver';
+  document.getElementById('qmConfirmBtn').textContent=`${lbl} ${qmState.qty}`;
+}
+function qmovBack() {
+  qmState.itemId=null;
+  document.getElementById('qmStep2').classList.add('hidden');
+  document.getElementById('qmStep1').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('qmInput').focus(),50);
+}
+function qmovConfirm() {
+  const item=S.items.find(i=>i.id===qmState.itemId);if(!item)return;
+  const qty=qmState.qty,isH=item.category==='Herramientas';
+  if(qmState.type==='salida'){
+    if(qty>ef(item)){alert(`Stock insuficiente. Disponible: ${ef(item)}`);return;}
+    if(isH)item.cantidad=Math.max(0,(item.cantidad||0)-qty);
+    else item.retirado=(item.retirado||0)+qty;
+  }else{
+    if(isH)item.cantidad=(item.cantidad||0)+qty;
+    else item.bodega=(item.bodega||0)+qty;
+  }
+  save();closeOv('ovQuickMove');renderTable();renderStats();
+  if(ui.view==='map'){buildShelfNav();buildMapView();if(currentCell)renderCellPanel(currentCell);}
 }
 
 // OPERATOR
