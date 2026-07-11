@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.14.2</title>
+  <title>Inventario v2.15.0</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -246,7 +246,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.14.2</span>
+    <span class="vbadge" id="vbadge">v2.15.0</span>
     <span id="saTag" class="hidden" onclick="if(confirm('¿Cerrar sesión Obrist?'))logout()" style="cursor:pointer" title="Clic para cerrar sesión">🔓 Obrist ✕</span>
   </div>
   <div class="cat-tabs">
@@ -518,7 +518,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.14.2';
+const APP_VERSION = 'v2.15.0';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -956,14 +956,16 @@ function buildMapView() {
 function buildSpecialZoneView(container,zone) {
   const cids=allShelfCids();
   const items=S.items.filter(i=>posZone(i.pos,cids)===zone.id);
-  if(!items.length){
-    container.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--mu)"><div style="font-size:2.5rem;margin-bottom:8px">${zone.icon}</div><div style="font-size:.85rem">No hay ítems en ${esc(zone.label)}.</div></div>`;
-    return;
-  }
   const byPos={};
   for(const it of items){if(!byPos[it.pos])byPos[it.pos]=[];byPos[it.pos].push(it);}
+  let entries=Object.entries(byPos).sort((a,b)=>a[0].localeCompare(b[0]));
+  if(!ses.sa) entries=entries.filter(([,its])=>its.reduce((s,i)=>s+ef(i),0)>0);
+  if(!entries.length){
+    container.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--mu)"><div style="font-size:2.5rem;margin-bottom:8px">${zone.icon}</div><div style="font-size:.85rem">${ses.sa?`No hay ítems en ${esc(zone.label)}.`:`No hay stock disponible en ${esc(zone.label)}.`}</div></div>`;
+    return;
+  }
   container.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:8px;padding:4px">`+
-    Object.entries(byPos).sort((a,b)=>a[0].localeCompare(b[0])).map(([pos,its])=>{
+    entries.map(([pos,its])=>{
       const total=its.reduce((s,i)=>s+ef(i),0);
       const hasOut=its.some(i=>ef(i)===0),hasRet=its.some(i=>(i.retirado||0)>0);
       let clz='map-cell'+(currentCell===pos?' mc-active':'')+(its.length?(hasOut?' mc-bad':hasRet?' mc-warn':' mc-ok'):'');
@@ -996,13 +998,14 @@ function buildShelfGrid(container,sh) {
       const hasOut=its.some(i=>ef(i)===0),hasRet=its.some(i=>(i.retirado||0)>0);
       const total=its.reduce((s,i)=>s+ef(i),0);
       const matched=srchQ&&its.some(i=>[i.name,i.brand,i.pos,i.notes,i.model].join(' ').toLowerCase().includes(srchQ));
+      const showFull=ses.sa||total>0;
       let clz='map-cell';
-      if(its.length){if(hasOut)clz+=' mc-bad';else if(hasRet)clz+=' mc-warn';else clz+=' mc-ok';}
+      if(its.length&&showFull){if(hasOut)clz+=' mc-bad';else if(hasRet)clz+=' mc-warn';else clz+=' mc-ok';}
       if(currentCell===cid)clz+=' mc-active';
       const op=srchQ&&its.length&&!matched?'opacity:.18;':'';
       html+=`<td colspan="${span}"><div class="${clz}" onclick="clickMapCell('${esc(cid)}')" style="${op}">
         <div class="mc-id">${esc(cid)}${merge?' ⟷':''}</div>
-        ${its.length
+        ${its.length&&showFull
           ?`<div class="mc-stock" style="color:${hasOut?'var(--dan)':hasRet?'var(--warn)':'var(--ok)'}">${total}</div><div class="mc-name">${its.map(i=>esc(i.name)).join(' · ')}</div>`
           :`<div style="font-size:.58rem;color:var(--mu);margin-top:auto">vacío</div>`}
       </div></td>`;
@@ -1032,7 +1035,7 @@ function locateOnMap(pos) {
 }
 
 function renderCellPanel(cid) {
-  const its = S.items.filter(i => i.pos === cid);
+  const its = S.items.filter(i => i.pos === cid && (ses.sa||ef(i)>0));
   const sh = shelfByRow(cid?.[0]);
   document.getElementById('cellPanelTitle').textContent = `📍 ${sh?.label||zoneLabelForPos(cid)} · ${cid}`;
   const canAdd = ses.sa||(ses.role==='operador'&&S.cfg.opCanAdd);
