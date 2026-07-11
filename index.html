@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.15.0</title>
+  <title>Inventario v2.15.1</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -210,12 +210,12 @@
     .ipreview{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-top:11px;font-size:.82rem}
     .isheet{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd)}
     .isheet:last-child{border-bottom:none}
-    .shelf-cfg-row{display:grid;grid-template-columns:60px 1fr 32px 46px 40px 44px 44px 44px 30px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd)}
+    .shelf-cfg-row{display:grid;grid-template-columns:60px 1fr 40px 32px 46px 40px 44px 44px 44px 30px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd)}
     .shelf-cfg-row:last-child{border-bottom:none}
     .shelf-cfg-row input{background:var(--bg);border:1px solid var(--bd);border-radius:7px;color:var(--tx);padding:6px 8px;font-size:.82rem;outline:none;width:100%}
     .shelf-cfg-row input:focus{border-color:var(--ac)}
     .shelf-cfg-row input[type=checkbox]{width:auto;height:16px}
-    .shelf-cfg-hdr{display:grid;grid-template-columns:60px 1fr 32px 46px 40px 44px 44px 44px 30px;gap:6px;padding:4px 0 7px;font-size:.68rem;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--bd);margin-bottom:5px}
+    .shelf-cfg-hdr{display:grid;grid-template-columns:60px 1fr 40px 32px 46px 40px 44px 44px 44px 30px;gap:6px;padding:4px 0 7px;font-size:.68rem;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--bd);margin-bottom:5px}
     .shelf-cfg-hdr span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .furn-cfg-row{display:flex;gap:7px;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd)}
     .furn-cfg-row:last-child{border-bottom:none}
@@ -246,7 +246,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.15.0</span>
+    <span class="vbadge" id="vbadge">v2.15.1</span>
     <span id="saTag" class="hidden" onclick="if(confirm('¿Cerrar sesión Obrist?'))logout()" style="cursor:pointer" title="Clic para cerrar sesión">🔓 Obrist ✕</span>
   </div>
   <div class="cat-tabs">
@@ -413,7 +413,7 @@
       <div style="font-size:.75rem;color:var(--mu);margin-bottom:8px">
         POS = <code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">FilaCol</code> · Cada estante ocupa un rango continuo de letras de fila. <b>Ini</b> se calcula automáticamente según el orden numérico del estante.
       </div>
-      <div class="shelf-cfg-hdr"><span>ID</span><span>Etiqueta</span><span>Ini</span><span>Pasillo</span><span>Pared</span><span>Filas</span><span>Cols</span><span>Ancho</span><span></span></div>
+      <div class="shelf-cfg-hdr"><span>ID</span><span>Etiqueta</span><span>Orden</span><span>Ini</span><span>Pasillo</span><span>Pared</span><span>Filas</span><span>Cols</span><span>Ancho</span><span></span></div>
       <div id="shelfCfgList"></div>
     </div>
     <div class="csec">
@@ -518,7 +518,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.15.0';
+const APP_VERSION = 'v2.15.1';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -608,6 +608,11 @@ function computeStartRows() {
     sh.startRow = ROWLABELS[idx] || 'A';
     idx += sh.rows;
   }
+  // migrate: assign an explicit display order (editable in Config) to any shelf
+  // missing one — new shelves append after the current max instead of colliding
+  // with existing custom order values
+  let maxSeq = Math.max(-1, ...S.cfg.shelves.filter(s=>s.seq!=null).map(s=>s.seq));
+  for(const sh of order) { if(sh.seq==null) { maxSeq++; sh.seq = maxSeq; } }
   save();
 }
 
@@ -876,9 +881,11 @@ function buildShelfNav() {
       return`<button class="floor2-btn${z===zone.id?' active':''}" style="flex:1;padding:10px 4px;font-size:.68rem;line-height:1.4" onclick="selectMapZone('${zone.id}')">${zone.icon}<br>${esc(zone.label)}<br><span style="font-size:.6rem;opacity:.65">${cnt}</span></button>`;
     }).join('')+`</div>`;
 
-  // Sort shelves by label number (same as computeStartRows)
+  // Sort shelves by their explicit display order (editable in Config → Orden),
+  // falling back to label number for shelves that predate that field
   const lnum=s=>{const m=(s.label||s.id).match(/(\d+)\s*([A-Z]?)/i);if(!m)return 9999;return parseInt(m[1])*100+(m[2]?m[2].toUpperCase().charCodeAt(0)-64:0);};
-  const sorted=[...sh].sort((a,b)=>lnum(a)-lnum(b));
+  const seqOf=s=>s.seq??lnum(s);
+  const sorted=[...sh].sort((a,b)=>seqOf(a)-seqOf(b));
   const wallSh=sorted.filter(s=>s.wall);
   const mainSh=sorted.filter(s=>!s.wall);
 
@@ -907,9 +914,6 @@ function buildShelfNav() {
       html+=`<button class="fp-shelf ${active?'fp-active':st}" onclick="selectMapZone('${esc(s.id)}')">${esc(s.label||s.id)}<br><span style="font-size:.6rem;font-weight:400;opacity:.65">filas ${rng} · ${cnt}</span></button>`;
     }
     html+=`</div>`;
-  }
-  if(mainSh.length){
-    html+=`<div class="fp-aisle-label">— Pasillo ${mainSh[mainSh.length-1].aisle||'?'} —</div>`;
   }
   html+=`<div class="fp-entrance">Entrada →</div>`;
   // Furniture zones (Mueble 1, 2, 3…)
@@ -1377,6 +1381,7 @@ function renderShelfCfg() {
   document.getElementById('shelfCfgList').innerHTML=sh.map((s,idx)=>`<div class="shelf-cfg-row">
     <input value="${esc(s.id)}" placeholder="ID" style="color:var(--ac);font-weight:700" onchange="updateShelfId(${idx},this.value)" />
     <input value="${esc(s.label||s.id)}" placeholder="Etiqueta" onchange="updateShelf(${idx},'label',this.value)" />
+    <input type="number" value="${s.seq??idx}" min="0" style="text-align:center" title="Orden en el plano (menor = más arriba)" onchange="updateShelfSeq(${idx},+this.value)" />
     <input value="${esc(s.startRow||'?')}" readonly style="color:var(--ok);font-weight:700;text-align:center;cursor:default" title="Fila inicial (auto-calculada)" />
     <input value="${esc(s.aisle||'')}" placeholder="A" style="text-align:center" onchange="updateShelf(${idx},'aisle',this.value)" title="Pasillo — agrupa estantes espalda con espalda en el plano" />
     <label style="display:flex;align-items:center;justify-content:center" title="Estante contra la pared (bloque superior del plano)">
@@ -1391,6 +1396,10 @@ function renderShelfCfg() {
 function updateShelf(idx,field,val) {
   if(!S.cfg.shelves)S.cfg.shelves=JSON.parse(JSON.stringify(DEFAULT_SHELVES));
   S.cfg.shelves[idx][field]=val;save();if(ui.view==='map'){buildShelfNav();buildMapView();}
+}
+function updateShelfSeq(idx,val) {
+  if(!S.cfg.shelves)S.cfg.shelves=JSON.parse(JSON.stringify(DEFAULT_SHELVES));
+  S.cfg.shelves[idx].seq=val;save();if(ui.view==='map')buildShelfNav();
 }
 function updateShelfRows(idx,val) {
   if(!S.cfg.shelves)S.cfg.shelves=JSON.parse(JSON.stringify(DEFAULT_SHELVES));
