@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.12.0</title>
+  <title>Inventario v2.13.0</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -238,7 +238,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.12.0</span>
+    <span class="vbadge" id="vbadge">v2.13.0</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -492,18 +492,6 @@
   </div>
 </div>
 
-<!-- MODAL PIN OPERADOR -->
-<div class="ov" id="ovOpPin">
-  <div class="modal sm">
-    <h2>🔑 Acceso Operador</h2>
-    <div class="fgrid one">
-      <div class="fg"><label>PIN de hoy (MMDD)</label><input type="password" id="opPinInput" placeholder="••••" maxlength="4" inputmode="numeric" oninput="if(this.value.length===4)doOpPin()" onkeydown="if(event.key==='Enter')doOpPin()" /></div>
-      <div id="opPinErr" style="color:var(--dan);font-size:.78rem;display:none">PIN incorrecto.</div>
-    </div>
-    <div class="mf"><button class="bs" onclick="cancelOpPin()">Cancelar</button><button class="bp" onclick="doOpPin()">Entrar</button></div>
-  </div>
-</div>
-
 <!-- MODAL HISTORIAL DE MOVIMIENTOS (Obrist) -->
 <div class="ov" id="ovHistory">
   <div class="modal lg">
@@ -520,7 +508,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.12.0';
+const APP_VERSION = 'v2.13.0';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -690,45 +678,10 @@ async function load() {
 function syncTxt() { document.getElementById('syncTxt').textContent=fmtDate(S.lastSaved); }
 
 // ROLE
-let opPinPending = null;
-function requireOperator(cb) {
-  if(ses.sa||ses.role==='operador'){cb();return;}
-  opPinPending=cb;
-  document.getElementById('opPinInput').value='';
-  document.getElementById('opPinErr').style.display='none';
-  openOv('ovOpPin');
-  setTimeout(()=>document.getElementById('opPinInput').focus(),80);
-}
 function setRole(r) {
-  if(r==='operador'&&ses.role!=='operador'&&!ses.sa){
-    requireOperator(()=>{
-      ses.role='operador';sessionStorage.setItem('r','operador');
-      document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role==='operador'));
-      renderHeader();renderTable();
-    });
-    return;
-  }
   ses.role=r;sessionStorage.setItem('r',r);
   document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role===r));
   renderHeader();renderTable();
-}
-function cancelOpPin() {
-  closeOv('ovOpPin');opPinPending=null;
-  document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role===ses.role));
-}
-function doOpPin() {
-  const entered=document.getElementById('opPinInput').value;
-  const d=new Date();
-  const expected=String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
-  if(entered===expected){
-    closeOv('ovOpPin');
-    const cb=opPinPending;opPinPending=null;
-    if(cb)cb();
-  }else{
-    document.getElementById('opPinErr').style.display='block';
-    document.getElementById('opPinInput').value='';
-    document.getElementById('opPinInput').focus();
-  }
 }
 function doLogin() {
   const v=document.getElementById('loginPwd').value;
@@ -1232,8 +1185,8 @@ document.getElementById('vbadge').addEventListener('click',()=>{
   if(ses.sa)return;sc++;clearTimeout(st);st=setTimeout(()=>sc=0,3000);
   if(sc>=5){sc=0;document.getElementById('loginPwd').value='';document.getElementById('loginErr').style.display='none';openOv('ovLogin');setTimeout(()=>document.getElementById('loginPwd').focus(),80);}
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape')['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev','ovQuickMove','ovOpPin','ovHistory'].forEach(closeOv);});
-['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev','ovQuickMove','ovOpPin','ovHistory'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))closeOv(id);});});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev','ovQuickMove','ovHistory'].forEach(closeOv);});
+['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev','ovQuickMove','ovHistory'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))closeOv(id);});});
 
 // ITEM CRUD
 function openAdd(prefillPos) {
@@ -1278,17 +1231,15 @@ function delItem(id) {
 
 // ── MOVIMIENTO RÁPIDO (Retirar / Devolver) ────────────────────────────────────
 function openQuickMove(type) {
-  requireOperator(()=>{
-    qmState={type,itemId:null,qty:1};
-    document.getElementById('qmTitle').textContent=type==='salida'?'📤 Retirar material':'📥 Devolver material';
-    document.getElementById('qmInput').value='';
-    document.getElementById('qmWho').value='';
-    document.getElementById('qmStep1').classList.remove('hidden');
-    document.getElementById('qmStep2').classList.add('hidden');
-    qmovFilter();
-    openOv('ovQuickMove');
-    setTimeout(()=>document.getElementById('qmInput').focus(),80);
-  });
+  qmState={type,itemId:null,qty:1};
+  document.getElementById('qmTitle').textContent=type==='salida'?'📤 Retirar material':'📥 Devolver material';
+  document.getElementById('qmInput').value='';
+  document.getElementById('qmWho').value='';
+  document.getElementById('qmStep1').classList.remove('hidden');
+  document.getElementById('qmStep2').classList.add('hidden');
+  qmovFilter();
+  openOv('ovQuickMove');
+  setTimeout(()=>document.getElementById('qmInput').focus(),80);
 }
 function qmovFilter() {
   const q=(document.getElementById('qmInput').value||'').toLowerCase();
