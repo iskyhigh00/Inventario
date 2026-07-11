@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.9.6</title>
+  <title>Inventario v2.10.0</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -187,11 +187,16 @@
     .ipreview{background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:11px;margin-top:10px;font-size:.81rem}
     .isheet{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd)}
     .isheet:last-child{border-bottom:none}
-    .shelf-cfg-row{display:grid;grid-template-columns:68px 1fr 38px 54px 54px 54px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)}
+    .shelf-cfg-row{display:grid;grid-template-columns:60px 1fr 32px 46px 40px 44px 44px 44px 30px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)}
     .shelf-cfg-row:last-child{border-bottom:none}
     .shelf-cfg-row input{background:var(--bg);border:1px solid var(--bd);border-radius:5px;color:var(--tx);padding:5px 8px;font-size:.82rem;outline:none;width:100%}
     .shelf-cfg-row input:focus{border-color:var(--ac)}
-    .shelf-cfg-hdr{display:grid;grid-template-columns:68px 1fr 38px 54px 54px 54px;gap:6px;padding:4px 0 6px;font-size:.68rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--bd);margin-bottom:4px}
+    .shelf-cfg-row input[type=checkbox]{width:auto;height:16px}
+    .shelf-cfg-hdr{display:grid;grid-template-columns:60px 1fr 32px 46px 40px 44px 44px 44px 30px;gap:6px;padding:4px 0 6px;font-size:.68rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--bd);margin-bottom:4px}
+    .furn-cfg-row{display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)}
+    .furn-cfg-row:last-child{border-bottom:none}
+    .furn-cfg-row input{background:var(--bg);border:1px solid var(--bd);border-radius:5px;color:var(--tx);padding:5px 8px;font-size:.82rem;outline:none}
+    .furn-cfg-row input:focus{border-color:var(--ac)}
     ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
     /* ── PALETAS ── */
     .theme-tog{display:flex;gap:4px;align-items:center;padding:3px 7px;background:var(--bg);border:1px solid var(--bd);border-radius:20px;flex-shrink:0}
@@ -210,7 +215,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.9.6</span>
+    <span class="vbadge" id="vbadge">v2.10.0</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -374,8 +379,15 @@
       <div style="font-size:.75rem;color:var(--mu);margin-bottom:8px">
         POS = <code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">FilaCol</code> · Cada estante ocupa un rango continuo de letras de fila. <b>Ini</b> se calcula automáticamente según el orden numérico del estante.
       </div>
-      <div class="shelf-cfg-hdr"><span>ID</span><span>Etiqueta</span><span>Ini</span><span>Filas</span><span>Cols</span><span>Ancho</span></div>
+      <div class="shelf-cfg-hdr"><span>ID</span><span>Etiqueta</span><span>Ini</span><span>Pasillo</span><span>Pared</span><span>Filas</span><span>Cols</span><span>Ancho</span><span></span></div>
       <div id="shelfCfgList"></div>
+    </div>
+    <div class="csec">
+      <h3>Muebles</h3>
+      <div style="font-size:.75rem;color:var(--mu);margin-bottom:8px">
+        Zonas del tamaño de un estante para muebles sueltos. Un ítem cuyo POS empiece con el prefijo (ej. <code style="background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--ac)">mueble1A</code>) se agrupa en ese mueble.
+      </div>
+      <div id="furnitureCfgList"></div>
     </div>
     <div class="csec">
       <h3>Contraseña</h3>
@@ -460,14 +472,14 @@
       <div class="fg"><label>PIN de hoy (MMDD)</label><input type="password" id="opPinInput" placeholder="••••" maxlength="4" inputmode="numeric" oninput="if(this.value.length===4)doOpPin()" onkeydown="if(event.key==='Enter')doOpPin()" /></div>
       <div id="opPinErr" style="color:var(--dan);font-size:.78rem;display:none">PIN incorrecto.</div>
     </div>
-    <div class="mf"><button class="bs" onclick="closeOv('ovOpPin');document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role===ses.role))">Cancelar</button><button class="bp" onclick="doOpPin()">Entrar</button></div>
+    <div class="mf"><button class="bs" onclick="cancelOpPin()">Cancelar</button><button class="bp" onclick="doOpPin()">Entrar</button></div>
   </div>
 </div>
 
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.9.6';
+const APP_VERSION = 'v2.10.0';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -481,13 +493,20 @@ const DEFAULT_SHELVES = [
 
 // Zonas especiales: aparecen como tarjetas grandes en la barra lateral del mapa.
 // prefix = prefijo del pos (case-insensitive); '' o null = catch-all (todo lo que no encaja en otra zona).
-const SPECIAL_ZONES = [
-  { id:'taller', label:'Taller',   icon:'🔧', prefix:'taller' },
-  { id:'m1',     label:'Mueble 1', icon:'🗄', prefix:'mueble1', type:'furniture' },
-  { id:'m2',     label:'Mueble 2', icon:'🗄', prefix:'mueble2', type:'furniture' },
-  { id:'m3',     label:'Mueble 3', icon:'🗄', prefix:'mueble3', type:'furniture' },
-  { id:'2do',    label:'2° Piso',  icon:'🏢', prefix:'' },
+const DEFAULT_FURNITURE = [
+  { id:'m1', label:'Mueble 1', icon:'🗄', prefix:'mueble1' },
+  { id:'m2', label:'Mueble 2', icon:'🗄', prefix:'mueble2' },
+  { id:'m3', label:'Mueble 3', icon:'🗄', prefix:'mueble3' },
 ];
+function furniture() { return S.cfg.furniture||DEFAULT_FURNITURE; }
+function specialZones() {
+  return [
+    { id:'taller', label:'Taller',  icon:'🔧', prefix:'taller' },
+    ...furniture().map(f=>({...f,type:'furniture'})),
+    { id:'2do',    label:'2° Piso', icon:'🏢', prefix:'' },
+  ];
+}
+function catchAllZoneId() { return specialZones().find(z=>!z.prefix)?.id; }
 
 function allShelfCids() {
   const s=new Set();
@@ -497,18 +516,17 @@ function allShelfCids() {
 
 function posZone(pos, cids) {
   if(!pos||pos==='—'||cids.has(pos)) return null;
-  for(const z of SPECIAL_ZONES) if(z.prefix&&pos.toLowerCase().startsWith(z.prefix.toLowerCase())) return z.id;
-  const catchAll=SPECIAL_ZONES.find(z=>!z.prefix);
-  return catchAll?.id??null;
+  for(const z of specialZones()) if(z.prefix&&pos.toLowerCase().startsWith(z.prefix.toLowerCase())) return z.id;
+  return catchAllZoneId();
 }
 
 function zoneLabelForPos(pos) {
   const sh=shelfByRow(pos?.[0]); if(sh) return sh.label;
   const zid=posZone(pos,allShelfCids());
-  return SPECIAL_ZONES.find(z=>z.id===zid)?.label||'—';
+  return specialZones().find(z=>z.id===zid)?.label||'—';
 }
 
-let S = { lastSaved:null, cfg:{ pwdHash:btoa('obrist'), opCanAdd:false, shelves:null }, items:[] };
+let S = { lastSaved:null, cfg:{ pwdHash:btoa('obrist'), opCanAdd:false, shelves:null, furniture:null }, items:[] };
 let ses = { role:sessionStorage.getItem('r')||'visualizador', sa:sessionStorage.getItem('sa')==='1' };
 let ui = { cat:'all', sc:'pos', sd:1, view:'table', hideEmpty:true, group:'', openGroups:{} };
 let pendingImport = null;
@@ -626,17 +644,31 @@ async function load() {
 function syncTxt() { document.getElementById('syncTxt').textContent=fmtDate(S.lastSaved); }
 
 // ROLE
+let opPinPending = null;
+function requireOperator(cb) {
+  if(ses.sa||ses.role==='operador'){cb();return;}
+  opPinPending=cb;
+  document.getElementById('opPinInput').value='';
+  document.getElementById('opPinErr').style.display='none';
+  openOv('ovOpPin');
+  setTimeout(()=>document.getElementById('opPinInput').focus(),80);
+}
 function setRole(r) {
   if(r==='operador'&&ses.role!=='operador'&&!ses.sa){
-    document.getElementById('opPinInput').value='';
-    document.getElementById('opPinErr').style.display='none';
-    openOv('ovOpPin');
-    setTimeout(()=>document.getElementById('opPinInput').focus(),80);
+    requireOperator(()=>{
+      ses.role='operador';sessionStorage.setItem('r','operador');
+      document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role==='operador'));
+      renderHeader();renderTable();
+    });
     return;
   }
   ses.role=r;sessionStorage.setItem('r',r);
   document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role===r));
   renderHeader();renderTable();
+}
+function cancelOpPin() {
+  closeOv('ovOpPin');opPinPending=null;
+  document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role===ses.role));
 }
 function doOpPin() {
   const entered=document.getElementById('opPinInput').value;
@@ -644,9 +676,8 @@ function doOpPin() {
   const expected=String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
   if(entered===expected){
     closeOv('ovOpPin');
-    ses.role='operador';sessionStorage.setItem('r','operador');
-    document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role==='operador'));
-    renderHeader();renderTable();
+    const cb=opPinPending;opPinPending=null;
+    if(cb)cb();
   }else{
     document.getElementById('opPinErr').style.display='block';
     document.getElementById('opPinInput').value='';
@@ -826,8 +857,9 @@ function initOrRefreshMap() {
 function buildShelfNav() {
   const sh=shelves(),z=currentMapZone;
   const cids=allShelfCids();
-  const quickZones=SPECIAL_ZONES.filter(zn=>!zn.type||zn.type!=='furniture');
-  const furnitureZones=SPECIAL_ZONES.filter(zn=>zn.type==='furniture');
+  const zones=specialZones();
+  const quickZones=zones.filter(zn=>!zn.type||zn.type!=='furniture');
+  const furnitureZones=zones.filter(zn=>zn.type==='furniture');
 
   // Quick zones (Taller, 2° Piso) — compact row at top
   document.getElementById('specialZonesEl').innerHTML=
@@ -907,7 +939,7 @@ function selectMapZone(zoneId) {
 
 function buildMapView() {
   const container=document.getElementById('mapMain');if(!container)return;
-  const zone=SPECIAL_ZONES.find(z=>z.id===currentMapZone);
+  const zone=specialZones().find(z=>z.id===currentMapZone);
   if(zone){buildSpecialZoneView(container,zone);return;}
   const sh=shelfById(currentMapZone);
   if(!sh){container.innerHTML='<div style="color:var(--mu);padding:20px;text-align:center">Selecciona un estante o zona</div>';return;}
@@ -986,7 +1018,7 @@ function locateOnMap(pos) {
   currentCell=pos;
   document.getElementById('cellPanel').classList.add('hidden');
   const sh=shelfByRow(pos[0]);
-  currentMapZone=sh?sh.id:(posZone(pos,allShelfCids())||SPECIAL_ZONES[SPECIAL_ZONES.length-1].id);
+  currentMapZone=sh?sh.id:(posZone(pos,allShelfCids())||catchAllZoneId());
   setView('map');
   buildShelfNav();buildMapView();
   setTimeout(()=>document.getElementById('viewMap')?.scrollIntoView({behavior:'smooth',block:'start'}),60);
@@ -1200,14 +1232,16 @@ function delItem(id) {
 
 // ── MOVIMIENTO RÁPIDO (Retirar / Devolver) ────────────────────────────────────
 function openQuickMove(type) {
-  qmState={type,itemId:null,qty:1};
-  document.getElementById('qmTitle').textContent=type==='salida'?'📤 Retirar material':'📥 Devolver material';
-  document.getElementById('qmInput').value='';
-  document.getElementById('qmStep1').classList.remove('hidden');
-  document.getElementById('qmStep2').classList.add('hidden');
-  qmovFilter();
-  openOv('ovQuickMove');
-  setTimeout(()=>document.getElementById('qmInput').focus(),80);
+  requireOperator(()=>{
+    qmState={type,itemId:null,qty:1};
+    document.getElementById('qmTitle').textContent=type==='salida'?'📤 Retirar material':'📥 Devolver material';
+    document.getElementById('qmInput').value='';
+    document.getElementById('qmStep1').classList.remove('hidden');
+    document.getElementById('qmStep2').classList.add('hidden');
+    qmovFilter();
+    openOv('ovQuickMove');
+    setTimeout(()=>document.getElementById('qmInput').focus(),80);
+  });
 }
 function qmovFilter() {
   const q=(document.getElementById('qmInput').value||'').toLowerCase();
@@ -1305,7 +1339,7 @@ function saveMov() {
 // CONFIG
 function openConfig() {
   document.getElementById('permAdd').checked=S.cfg.opCanAdd;document.getElementById('pwd1').value='';document.getElementById('pwd2').value='';document.getElementById('pwdMsg').textContent='';
-  renderShelfCfg();openOv('ovConfig');
+  renderShelfCfg();renderFurnitureCfg();openOv('ovConfig');
 }
 function savePerm() { S.cfg.opCanAdd=document.getElementById('permAdd').checked;save();renderHeader(); }
 function renderShelfCfg() {
@@ -1314,14 +1348,19 @@ function renderShelfCfg() {
     <input value="${esc(s.id)}" placeholder="ID" style="color:var(--ac);font-weight:700" onchange="updateShelfId(${idx},this.value)" />
     <input value="${esc(s.label||s.id)}" placeholder="Etiqueta" onchange="updateShelf(${idx},'label',this.value)" />
     <input value="${esc(s.startRow||'?')}" readonly style="color:var(--ok);font-weight:700;text-align:center;cursor:default" title="Fila inicial (auto-calculada)" />
+    <input value="${esc(s.aisle||'')}" placeholder="A" style="text-align:center" onchange="updateShelf(${idx},'aisle',this.value)" title="Pasillo — agrupa estantes espalda con espalda en el plano" />
+    <label style="display:flex;align-items:center;justify-content:center" title="Estante contra la pared (bloque superior del plano)">
+      <input type="checkbox" ${s.wall?'checked':''} onchange="updateShelf(${idx},'wall',this.checked)" />
+    </label>
     <input type="number" value="${s.rows}" min="1" max="26" onchange="updateShelfRows(${idx},+this.value)" />
     <input type="number" value="${s.cols}" min="1" max="20" onchange="updateShelf(${idx},'cols',+this.value)" />
     <input type="number" value="${s.w||4}" min="1" max="20" step="0.5" onchange="updateShelf(${idx},'w',+this.value)" />
-  </div>`).join('');
+    <button class="bic bsm" style="color:var(--dan)" onclick="deleteShelf(${idx})" title="Eliminar estante">✕</button>
+  </div>`).join('')+`<div style="margin-top:8px"><button class="bs bsm" onclick="addShelf()">+ Agregar estante</button></div>`;
 }
 function updateShelf(idx,field,val) {
   if(!S.cfg.shelves)S.cfg.shelves=JSON.parse(JSON.stringify(DEFAULT_SHELVES));
-  S.cfg.shelves[idx][field]=val;save();if(ui.view==='map')buildMapView();
+  S.cfg.shelves[idx][field]=val;save();if(ui.view==='map'){buildShelfNav();buildMapView();}
 }
 function updateShelfRows(idx,val) {
   if(!S.cfg.shelves)S.cfg.shelves=JSON.parse(JSON.stringify(DEFAULT_SHELVES));
@@ -1329,7 +1368,7 @@ function updateShelfRows(idx,val) {
   computeStartRows();
   renderShelfCfg();
   renderDatalist();
-  if(ui.view==='map')buildMapView();
+  if(ui.view==='map'){buildShelfNav();buildMapView();}
 }
 function updateShelfId(idx,newId) {
   newId=newId.trim();if(!newId)return;
@@ -1337,7 +1376,49 @@ function updateShelfId(idx,newId) {
   const oldId=S.cfg.shelves[idx].id;
   if(newId===oldId)return;
   S.cfg.shelves[idx].id=newId;
-  save();renderDatalist();if(ui.view==='map')buildMapView();
+  save();renderDatalist();if(ui.view==='map'){buildShelfNav();buildMapView();}
+}
+function addShelf() {
+  if(!S.cfg.shelves)S.cfg.shelves=JSON.parse(JSON.stringify(DEFAULT_SHELVES));
+  let i=S.cfg.shelves.length+1,id=`E${i}`;
+  while(S.cfg.shelves.some(s=>s.id===id)){i++;id=`E${i}`;}
+  const lastAisle=S.cfg.shelves[S.cfg.shelves.length-1]?.aisle||'A';
+  S.cfg.shelves.push({id,label:`Estante ${i}`,aisle:lastAisle,rows:4,cols:5,w:4});
+  computeStartRows();renderShelfCfg();renderDatalist();if(ui.view==='map'){buildShelfNav();buildMapView();}
+}
+function deleteShelf(idx) {
+  if(!confirm('¿Eliminar este estante? Los ítems con posiciones en su rango quedarán sin estante asignado (revísalos en Diagnóstico).'))return;
+  S.cfg.shelves.splice(idx,1);
+  computeStartRows();renderShelfCfg();renderDatalist();
+  if(ui.view==='map'){currentMapZone=null;buildShelfNav();buildMapView();}
+}
+
+// MUEBLES
+function renderFurnitureCfg() {
+  const f=furniture();
+  document.getElementById('furnitureCfgList').innerHTML=f.map((m,idx)=>`<div class="furn-cfg-row">
+    <input value="${esc(m.label)}" placeholder="Etiqueta" style="flex:1" onchange="updateFurniture(${idx},'label',this.value)" />
+    <input value="${esc(m.prefix)}" placeholder="prefijo" style="width:110px;color:var(--ac)" onchange="updateFurniture(${idx},'prefix',this.value)" />
+    <button class="bic bsm" style="color:var(--dan)" onclick="deleteFurniture(${idx})" title="Eliminar mueble">✕</button>
+  </div>`).join('')+`<div style="margin-top:8px"><button class="bs bsm" onclick="addFurniture()">+ Agregar mueble</button></div>`;
+}
+function updateFurniture(idx,field,val) {
+  if(!S.cfg.furniture)S.cfg.furniture=JSON.parse(JSON.stringify(DEFAULT_FURNITURE));
+  S.cfg.furniture[idx][field]=field==='prefix'?val.trim().toLowerCase():val;
+  save();if(ui.view==='map'){buildShelfNav();buildMapView();}
+}
+function addFurniture() {
+  if(!S.cfg.furniture)S.cfg.furniture=JSON.parse(JSON.stringify(DEFAULT_FURNITURE));
+  let i=S.cfg.furniture.length+1,id=`m${i}`;
+  while(S.cfg.furniture.some(m=>m.id===id)){i++;id=`m${i}`;}
+  S.cfg.furniture.push({id,label:`Mueble ${i}`,icon:'🗄',prefix:`mueble${i}`});
+  save();renderFurnitureCfg();if(ui.view==='map'){buildShelfNav();buildMapView();}
+}
+function deleteFurniture(idx) {
+  if(!confirm('¿Eliminar este mueble?'))return;
+  if(!S.cfg.furniture)S.cfg.furniture=JSON.parse(JSON.stringify(DEFAULT_FURNITURE));
+  S.cfg.furniture.splice(idx,1);
+  save();renderFurnitureCfg();if(ui.view==='map'){currentMapZone=null;buildShelfNav();buildMapView();}
 }
 function changePwd() {
   const p1=document.getElementById('pwd1').value,p2=document.getElementById('pwd2').value,m=document.getElementById('pwdMsg');
