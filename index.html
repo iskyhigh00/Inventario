@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.14.0</title>
+  <title>Inventario v2.14.1</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -182,6 +182,11 @@
     .modal{background:var(--s1);border:1px solid var(--bd);border-radius:18px;padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);transform:scale(.94) translateY(8px);transition:transform .2s cubic-bezier(.2,.9,.3,1.2)}
     .ov.open .modal{transform:scale(1) translateY(0)}
     .modal.sm{width:340px}.modal.lg{width:600px}
+    .modal.lev-modal{display:flex;flex-direction:column;max-height:85vh;overflow:hidden}
+    .lev-modal-head{flex-shrink:0}
+    .lev-modal-body{flex:1;min-height:120px;overflow-y:auto;margin:0 -4px;padding:0 4px}
+    .lev-modal-foot{display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--bd);padding-top:12px;margin-top:14px;flex-shrink:0}
+    .lev-modal-foot button{min-height:44px}
     .modal h2{font-size:1.02rem;font-weight:800;margin-bottom:18px}
     .mf{display:flex;gap:9px;justify-content:flex-end;margin-top:20px}
     .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -241,7 +246,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.14.0</span>
+    <span class="vbadge" id="vbadge">v2.14.1</span>
     <span id="saTag" class="hidden" onclick="if(confirm('¿Cerrar sesión Obrist?'))logout()" style="cursor:pointer" title="Clic para cerrar sesión">🔓 Obrist ✕</span>
   </div>
   <div class="cat-tabs">
@@ -444,18 +449,20 @@
 
 <!-- LEVANTAMIENTO -->
 <div class="ov" id="ovLev">
-  <div class="modal lg">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <h2>📋 Levantamiento de inventario</h2>
-      <button class="bic bsm" onclick="closeOv('ovLev')">✕</button>
+  <div class="modal lg lev-modal">
+    <div class="lev-modal-head">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <h2 style="margin-bottom:0">📋 Levantamiento de inventario</h2>
+        <button class="bic bsm" onclick="closeOv('ovLev')">✕</button>
+      </div>
+      <div id="levProgress" style="font-size:.72rem;color:var(--mu);margin-bottom:6px"></div>
+      <div style="background:var(--s2);border-radius:3px;height:5px;margin-bottom:14px;overflow:hidden">
+        <div style="height:100%;background:var(--ac);border-radius:3px;transition:width .3s" id="levBar"></div>
+      </div>
+      <div id="levCellTitle" style="font-size:.95rem;font-weight:700"></div>
     </div>
-    <div id="levProgress" style="font-size:.72rem;color:var(--mu);margin-bottom:6px"></div>
-    <div style="background:var(--s2);border-radius:3px;height:5px;margin-bottom:14px;overflow:hidden">
-      <div style="height:100%;background:var(--ac);border-radius:3px;transition:width .3s" id="levBar"></div>
-    </div>
-    <div id="levCellTitle" style="font-size:.95rem;font-weight:700;margin-bottom:12px"></div>
-    <div id="levBody" style="max-height:50vh;overflow-y:auto"></div>
-    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--bd);padding-top:12px">
+    <div id="levBody" class="lev-modal-body"></div>
+    <div class="lev-modal-foot">
       <button class="bs bsm" onclick="levPrev()" id="levPrevBtn">← Anterior</button>
       <button class="bs bsm" onclick="levAddHere()">+ Agregar aquí</button>
       <div style="flex:1"></div>
@@ -511,7 +518,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.14.0';
+const APP_VERSION = 'v2.14.1';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
