@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.13.1</title>
+  <title>Inventario v2.14.0</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -33,10 +33,11 @@
     .vbtn{padding:7px 14px;background:transparent;border:none;border-radius:9px;color:var(--mu);font-size:.8rem;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap;min-height:36px}
     .vbtn.active{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;box-shadow:var(--shadow-sm)}
     .vbtn:hover:not(.active){background:var(--s2);color:var(--tx)}
-    .srch{position:relative;width:190px;flex-shrink:0}
-    .srch input{width:100%;padding:9px 12px 9px 32px;background:var(--bg);border:1px solid var(--bd);border-radius:12px;color:var(--tx);font-size:.85rem;outline:none;transition:border-color .15s,box-shadow .15s}
+    .srch{position:relative;flex:1 1 300px;min-width:200px;max-width:520px}
+    .srch input{width:100%;padding:13px 16px 13px 42px;background:var(--bg);border:1.5px solid var(--bd);border-radius:14px;color:var(--tx);font-size:.95rem;font-weight:500;outline:none;transition:border-color .15s,box-shadow .15s;box-shadow:var(--shadow-sm)}
+    .srch input::placeholder{color:var(--mu)}
     .srch input:focus{border-color:var(--ac);box-shadow:var(--glow)}
-    .srch svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--mu);pointer-events:none}
+    .srch svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--mu);pointer-events:none;width:18px;height:18px}
     .role-tog{display:flex;background:var(--bg);border:1px solid var(--bd);border-radius:12px;overflow:hidden;flex-shrink:0;padding:3px;gap:3px}
     .role-btn{padding:7px 14px;background:transparent;border:none;border-radius:9px;color:var(--mu);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap;min-height:36px}
     .role-btn.active{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;box-shadow:var(--shadow-sm)}
@@ -240,7 +241,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.13.1</span>
+    <span class="vbadge" id="vbadge">v2.14.0</span>
     <span id="saTag" class="hidden" onclick="if(confirm('¿Cerrar sesión Obrist?'))logout()" style="cursor:pointer" title="Clic para cerrar sesión">🔓 Obrist ✕</span>
   </div>
   <div class="cat-tabs">
@@ -255,7 +256,7 @@
   </div>
   <div class="srch">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-    <input type="text" id="searchInput" placeholder="Buscar…" autocomplete="off" oninput="applyFilters();if(ui.view==='map')refreshMap3D()" />
+    <input type="text" id="searchInput" placeholder="Buscar artículo, marca o posición…" autocomplete="off" oninput="applyFilters();if(ui.view==='map')refreshMap3D()" />
   </div>
   <div class="role-tog">
     <button class="role-btn active" data-role="visualizador" onclick="setRole('visualizador')">Visualizador</button>
@@ -289,7 +290,7 @@
         <select id="fEstado" onchange="applyFilters()"><option value="">Todos los estados</option></select>
         <select id="fMarca"  onchange="applyFilters()"><option value="">Todas las marcas</option></select>
       </span>
-      <button id="hideEmptyBtn" class="bsm bp" onclick="toggleHideEmpty()" title="Mostrar u ocultar ítems sin stock">Sin stock: ocultos</button>
+      <button id="hideEmptyBtn" class="bsm bp hidden" onclick="toggleHideEmpty()" title="Mostrar u ocultar ítems sin stock">Sin stock: ocultos</button>
     </div>
     <div class="grp-chips">
       <span class="fl">Agrupar:</span>
@@ -510,7 +511,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.13.1';
+const APP_VERSION = 'v2.14.0';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -796,7 +797,7 @@ function renderTable() {
     const efv=ef(item),ret=item.retirado||0,isH=item.category==='Herramientas';
     const acts=`<div class="ra"><button class="bic bsm" onclick="openEdit('${item.id}')">✎</button><button class="bic bsm" style="color:var(--dan)" onclick="delItem('${item.id}')">✕</button></div>`;
     const cats=[...new Set(items.map(i=>i.category))];const showBR=cats.some(c=>c!=='Herramientas');
-    return`<tr ondblclick="if(event.target.tagName!=='BUTTON')locateOnMap('${esc(item.pos||'')}')" style="cursor:default"><td><span class="cat-dot">${esc(item.category||'')}</span></td><td><span class="pos-chip" onclick="locateOnMap('${esc(item.pos||'')}')">${esc(item.pos||'—')}</span></td><td><div style="font-weight:600">${esc(item.name)}</div>${item.notes?`<div style="font-size:.7rem;color:var(--mu)">${esc(item.notes)}</div>`:''}</td><td style="color:var(--mu)">${esc(item.brand||'')}</td><td>${condBadge(item.condition)}</td><td style="color:var(--mu)">${esc(item.model||'')}</td>${showBR?`<td class="tn">${isH?'—':item.bodega||0}</td>`:''}${showBR?`<td class="tr2 ${ret===0?'z':''}">${isH?'—':ret||0}</td>`:''}<td class="tb" style="${efv===0?'color:var(--dan)':''}">${efv}</td><td style="text-align:right;color:var(--mu)">${item.real!=null?item.real:''}</td><td>${acts}</td></tr>`;
+    return`<tr onclick="if(event.target.tagName!=='BUTTON'&&!event.target.classList.contains('pos-chip'))quickRetireItem('${item.id}')" style="cursor:pointer"><td><span class="cat-dot">${esc(item.category||'')}</span></td><td><span class="pos-chip" onclick="locateOnMap('${esc(item.pos||'')}')">${esc(item.pos||'—')}</span></td><td><div style="font-weight:600">${esc(item.name)}</div>${item.notes?`<div style="font-size:.7rem;color:var(--mu)">${esc(item.notes)}</div>`:''}</td><td style="color:var(--mu)">${esc(item.brand||'')}</td><td>${condBadge(item.condition)}</td><td style="color:var(--mu)">${esc(item.model||'')}</td>${showBR?`<td class="tn">${isH?'—':item.bodega||0}</td>`:''}${showBR?`<td class="tr2 ${ret===0?'z':''}">${isH?'—':ret||0}</td>`:''}<td class="tb" style="${efv===0?'color:var(--dan)':''}">${efv}</td><td style="text-align:right;color:var(--mu)">${item.real!=null?item.real:''}</td><td>${acts}</td></tr>`;
   };
   const simRow=item=>{
     const efv=ef(item),isH=item.category==='Herramientas';
@@ -807,7 +808,7 @@ function renderTable() {
       ?`<div class="qc"><button class="bic bsm" onclick="adjH('${item.id}',-1)">−</button><span class="qv">${efv}</span><button class="bic bsm" onclick="adjH('${item.id}',1)">+</button></div>`
       :`<div class="ra"><button class="bs bsm" onclick="openMov('${item.id}','entrada')">↑</button><button class="bs bsm" style="color:var(--warn);border-color:var(--warn)" onclick="openMov('${item.id}','salida')">↓</button></div>`;
     const catColor=item.category==='Repuestos'?'#6366f1':item.category==='Herramientas'?'#a78bfa':'#4ade80';
-    return`<tr ondblclick="if(event.target.tagName!=='BUTTON')locateOnMap('${esc(item.pos||'')}')" style="cursor:default"><td style="padding-right:4px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${catColor}"></span></td><td><span class="pos-chip" onclick="locateOnMap('${esc(item.pos||'')}')">${esc(item.pos||'—')}</span></td><td><div style="font-weight:600">${esc(item.name)}</div>${(item.brand||item.model)?`<div style="font-size:.7rem;color:var(--mu)">${[item.brand,item.model].filter(Boolean).map(esc).join(' · ')}</div>`:''}</td><td>${condBadge(item.condition)}</td><td>${stockBadge}</td><td>${acts}</td></tr>`;
+    return`<tr onclick="if(event.target.tagName!=='BUTTON'&&!event.target.classList.contains('pos-chip'))quickRetireItem('${item.id}')" style="cursor:pointer"><td style="padding-right:4px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${catColor}"></span></td><td><span class="pos-chip" onclick="locateOnMap('${esc(item.pos||'')}')">${esc(item.pos||'—')}</span></td><td><div style="font-weight:600">${esc(item.name)}</div>${(item.brand||item.model)?`<div style="font-size:.7rem;color:var(--mu)">${[item.brand,item.model].filter(Boolean).map(esc).join(' · ')}</div>`:''}</td><td>${condBadge(item.condition)}</td><td>${stockBadge}</td><td>${acts}</td></tr>`;
   };
 
   const collapsible=!!ui.group;
@@ -1232,6 +1233,16 @@ function delItem(id) {
 }
 
 // ── MOVIMIENTO RÁPIDO (Retirar / Devolver) ────────────────────────────────────
+function quickRetireItem(id) {
+  const item=S.items.find(i=>i.id===id);if(!item)return;
+  if(ef(item)===0){alert(`Sin stock disponible para retirar.\n${item.name}`);return;}
+  qmState={type:'salida',itemId:null,qty:1};
+  document.getElementById('qmTitle').textContent='📤 Retirar material';
+  document.getElementById('qmInput').value='';
+  document.getElementById('qmWho').value='';
+  qmovSelectItem(id);
+  openOv('ovQuickMove');
+}
 function openQuickMove(type) {
   qmState={type,itemId:null,qty:1};
   document.getElementById('qmTitle').textContent=type==='salida'?'📤 Retirar material':'📥 Devolver material';
