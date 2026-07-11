@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.15.1</title>
+  <title>Inventario v2.15.2</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -246,7 +246,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.15.1</span>
+    <span class="vbadge" id="vbadge">v2.15.2</span>
     <span id="saTag" class="hidden" onclick="if(confirm('¿Cerrar sesión Obrist?'))logout()" style="cursor:pointer" title="Clic para cerrar sesión">🔓 Obrist ✕</span>
   </div>
   <div class="cat-tabs">
@@ -494,9 +494,9 @@
       </div>
       <input type="text" id="qmWho" placeholder="Quién retira/devuelve (opcional)" autocomplete="off"
         style="width:100%;padding:10px 13px;font-size:.86rem;background:var(--bg);border:1.5px solid var(--bd);border-radius:10px;color:var(--tx);outline:none;margin-bottom:14px" />
-      <div style="display:flex;gap:8px">
-        <button class="bs" style="flex:1;padding:11px" onclick="qmovBack()">← Cambiar</button>
-        <button id="qmConfirmBtn" class="bp" style="flex:2;padding:11px;font-size:.95rem" onclick="qmovConfirm()">✓ Confirmar</button>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="bic bsm" onclick="qmovBack()">Cancelar</button>
+        <button id="qmConfirmBtn" class="bp" style="flex:1;padding:13px;font-size:1rem" onclick="qmovConfirm()">✓ Confirmar</button>
       </div>
     </div>
   </div>
@@ -518,7 +518,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.15.1';
+const APP_VERSION = 'v2.15.2';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
