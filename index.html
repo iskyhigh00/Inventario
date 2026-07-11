@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.14.1</title>
+  <title>Inventario v2.14.2</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -246,7 +246,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.14.1</span>
+    <span class="vbadge" id="vbadge">v2.14.2</span>
     <span id="saTag" class="hidden" onclick="if(confirm('¿Cerrar sesión Obrist?'))logout()" style="cursor:pointer" title="Clic para cerrar sesión">🔓 Obrist ✕</span>
   </div>
   <div class="cat-tabs">
@@ -518,7 +518,7 @@
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.14.1';
+const APP_VERSION = 'v2.14.2';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -760,10 +760,8 @@ function renderStats() {
   if(ses.sa) {
     const conRet=all.filter(i=>(i.retirado||0)>0).length;
     document.getElementById('statsBar').innerHTML=`<div class="sc"><div class="sv">${total}</div><div class="sl">Ítems</div></div><div class="sc ok"><div class="sv">${units}</div><div class="sl">Disponibles</div></div><div class="sc w"><div class="sv">${conRet}</div><div class="sl">Con retiros</div></div><div class="sc d"><div class="sv">${sinStock}</div><div class="sl">Sin stock</div></div>`;
-  } else if(ses.role==='operador') {
-    document.getElementById('statsBar').innerHTML=`<div class="sc ok"><div class="sv">${units}</div><div class="sl">Disponibles</div></div><div class="sc d"><div class="sv">${sinStock}</div><div class="sl">Sin stock</div></div>`;
   } else {
-    document.getElementById('statsBar').innerHTML=''; // visualizador: sin stats
+    document.getElementById('statsBar').innerHTML=''; // operador/visualizador: sin stats
   }
 }
 function renderFilters() {
