@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario v2.11.0</title>
+  <title>Inventario v2.12.0</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -238,7 +238,7 @@
 <header>
   <div class="brand">
     <h1>📦 Inventario</h1>
-    <span class="vbadge" id="vbadge">v2.11.0</span>
+    <span class="vbadge" id="vbadge">v2.12.0</span>
     <span id="saTag" class="hidden">🔓 Obrist</span>
   </div>
   <div class="cat-tabs">
@@ -367,7 +367,10 @@
     <h2 id="movTitle">Movimiento</h2>
     <div style="font-size:.83rem;color:var(--mu);margin-bottom:12px" id="movDesc"></div>
     <input type="hidden" id="movId" /><input type="hidden" id="movType" />
-    <div class="fgrid one"><div class="fg"><label>Cantidad</label><input type="number" id="movQty" min="1" value="1" /></div></div>
+    <div class="fgrid one">
+      <div class="fg"><label>Cantidad</label><input type="number" id="movQty" min="1" value="1" /></div>
+      <div class="fg"><label>Quién retira/devuelve (opcional)</label><input type="text" id="movWho" placeholder="Nombre o iniciales" autocomplete="off" /></div>
+    </div>
     <div class="mf"><button class="bs" onclick="closeOv('ovMov')">Cancelar</button><button class="bp" onclick="saveMov()">Confirmar</button></div>
   </div>
 </div>
@@ -474,11 +477,13 @@
     <!-- Paso 2: cantidad -->
     <div id="qmStep2" class="hidden">
       <div id="qmSelectedCard" style="margin-bottom:16px"></div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:18px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:16px">
         <button class="qm-qty-btn" onclick="qmovAdj(-1)">−</button>
         <span id="qmQtyDisplay" style="font-size:2.2rem;font-weight:800;min-width:64px;text-align:center">1</span>
         <button class="qm-qty-btn" onclick="qmovAdj(1)">+</button>
       </div>
+      <input type="text" id="qmWho" placeholder="Quién retira/devuelve (opcional)" autocomplete="off"
+        style="width:100%;padding:10px 13px;font-size:.86rem;background:var(--bg);border:1.5px solid var(--bd);border-radius:10px;color:var(--tx);outline:none;margin-bottom:14px" />
       <div style="display:flex;gap:8px">
         <button class="bs" style="flex:1;padding:11px" onclick="qmovBack()">← Cambiar</button>
         <button id="qmConfirmBtn" class="bp" style="flex:2;padding:11px;font-size:.95rem" onclick="qmovConfirm()">✓ Confirmar</button>
@@ -499,10 +504,23 @@
   </div>
 </div>
 
+<!-- MODAL HISTORIAL DE MOVIMIENTOS (Obrist) -->
+<div class="ov" id="ovHistory">
+  <div class="modal lg">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h2>📜 Historial de movimientos</h2>
+      <button class="bic bsm" onclick="closeOv('ovHistory')">✕</button>
+    </div>
+    <input type="text" id="historySearch" placeholder="Buscar por artículo, posición o quién…" autocomplete="off" oninput="renderHistory()"
+      style="width:100%;padding:10px 13px;font-size:.86rem;background:var(--bg);border:1.5px solid var(--bd);border-radius:10px;color:var(--tx);outline:none;margin-bottom:12px" />
+    <div id="historyBody" style="max-height:60vh;overflow-y:auto"></div>
+  </div>
+</div>
+
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <script>
-const APP_VERSION = 'v2.11.0';
+const APP_VERSION = 'v2.12.0';
 const SK = 'bodega_v2';
 
 const DEFAULT_SHELVES = [
@@ -549,7 +567,7 @@ function zoneLabelForPos(pos) {
   return specialZones().find(z=>z.id===zid)?.label||'—';
 }
 
-let S = { lastSaved:null, cfg:{ pwdHash:btoa('obrist'), opCanAdd:false, shelves:null, furniture:null }, items:[] };
+let S = { lastSaved:null, cfg:{ pwdHash:btoa('obrist'), opCanAdd:false, shelves:null, furniture:null }, items:[], movLog:[] };
 let ses = { role:sessionStorage.getItem('r')||'visualizador', sa:sessionStorage.getItem('sa')==='1' };
 let ui = { cat:'all', sc:'pos', sd:1, view:'table', hideEmpty:true, group:'', openGroups:{} };
 let pendingImport = null;
@@ -598,6 +616,11 @@ function computeStartRows() {
 function ef(item) {
   if(item.category==='Herramientas') return item.cantidad||0;
   return Math.max(0,(item.bodega||0)-(item.retirado||0));
+}
+function logMov(item, type, qty, who) {
+  if(!S.movLog) S.movLog=[];
+  S.movLog.unshift({id:genId(), ts:Date.now(), type, itemId:item.id, name:item.name, pos:item.pos||'—', category:item.category, qty, who:(who||'').trim()});
+  if(S.movLog.length>500) S.movLog.length=500;
 }
 function condBadge(c) {
   if(!c)return'';const l=c.toLowerCase();let cls='bmu';
@@ -765,7 +788,7 @@ function renderHeader() {
   document.getElementById('saTag').classList.toggle('hidden',!ses.sa);
   document.getElementById('quickBar').classList.add('visible');
   let h='';
-  if(ses.sa)h=`<button class="bs bsm" onclick="openLev()">📋 Levantamiento</button><button class="bs bsm" onclick="openOv('ovImport')">📥 Importar</button><button class="bs bsm" onclick="doExport()">📤 Exportar</button><button class="bp bsm" onclick="openAdd()">+ Agregar</button><button class="bic bsm" onclick="openConfig()" title="Config">⚙️</button>`;
+  if(ses.sa)h=`<button class="bs bsm" onclick="openLev()">📋 Levantamiento</button><button class="bs bsm" onclick="openHistory()">📜 Historial</button><button class="bs bsm" onclick="openOv('ovImport')">📥 Importar</button><button class="bs bsm" onclick="doExport()">📤 Exportar</button><button class="bp bsm" onclick="openAdd()">+ Agregar</button><button class="bic bsm" onclick="openConfig()" title="Config">⚙️</button>`;
   else if(ses.role==='operador')h=`<button class="bs bsm" onclick="openLev()">📋 Levantamiento</button>${S.cfg.opCanAdd?`<button class="bp bsm" onclick="openAdd()">+ Agregar</button>`:''}`;
   document.getElementById('hacts').innerHTML=h;
 }
@@ -1209,8 +1232,8 @@ document.getElementById('vbadge').addEventListener('click',()=>{
   if(ses.sa)return;sc++;clearTimeout(st);st=setTimeout(()=>sc=0,3000);
   if(sc>=5){sc=0;document.getElementById('loginPwd').value='';document.getElementById('loginErr').style.display='none';openOv('ovLogin');setTimeout(()=>document.getElementById('loginPwd').focus(),80);}
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape')['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev','ovQuickMove','ovOpPin'].forEach(closeOv);});
-['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev','ovQuickMove','ovOpPin'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))closeOv(id);});});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev','ovQuickMove','ovOpPin','ovHistory'].forEach(closeOv);});
+['ovLogin','ovItem','ovMov','ovImport','ovConfig','ovLev','ovQuickMove','ovOpPin','ovHistory'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))closeOv(id);});});
 
 // ITEM CRUD
 function openAdd(prefillPos) {
@@ -1259,6 +1282,7 @@ function openQuickMove(type) {
     qmState={type,itemId:null,qty:1};
     document.getElementById('qmTitle').textContent=type==='salida'?'📤 Retirar material':'📥 Devolver material';
     document.getElementById('qmInput').value='';
+    document.getElementById('qmWho').value='';
     document.getElementById('qmStep1').classList.remove('hidden');
     document.getElementById('qmStep2').classList.add('hidden');
     qmovFilter();
@@ -1327,6 +1351,7 @@ function qmovBack() {
 function qmovConfirm() {
   const item=S.items.find(i=>i.id===qmState.itemId);if(!item)return;
   const qty=qmState.qty,isH=item.category==='Herramientas';
+  const who=document.getElementById('qmWho').value;
   if(qmState.type==='salida'){
     if(qty>ef(item)){alert(`Stock insuficiente. Disponible: ${ef(item)}`);return;}
     if(isH)item.cantidad=Math.max(0,(item.cantidad||0)-qty);
@@ -1336,26 +1361,36 @@ function qmovConfirm() {
     if(isH)item.cantidad=(item.cantidad||0)+qty;
     else item.bodega=(item.bodega||0)+qty;
   }
+  logMov(item,qmState.type,qty,who);
   save();closeOv('ovQuickMove');renderTable();renderStats();
   if(ui.view==='map'){buildShelfNav();buildMapView();if(currentCell)renderCellPanel(currentCell);}
 }
 
 // OPERATOR
-function adjH(id,delta) { const it=S.items.find(i=>i.id===id);if(!it)return;it.cantidad=Math.max(0,(it.cantidad||0)+delta);save();renderTable();renderStats(); }
+function adjH(id,delta) {
+  const it=S.items.find(i=>i.id===id);if(!it)return;
+  it.cantidad=Math.max(0,(it.cantidad||0)+delta);
+  if(delta<0)it.lastOut=Date.now();
+  logMov(it,delta<0?'salida':'entrada',Math.abs(delta),'');
+  save();renderTable();renderStats();
+}
 function openMov(id,type) {
   const it=S.items.find(i=>i.id===id);if(!it)return;
   document.getElementById('movId').value=id;document.getElementById('movType').value=type;
   document.getElementById('movTitle').textContent=type==='entrada'?'📥 Entrada de stock':'📤 Salida de stock';
   document.getElementById('movDesc').textContent=`${it.pos} · ${it.name} — disponible: ${ef(it)}`;
-  document.getElementById('movQty').value='1';openOv('ovMov');setTimeout(()=>document.getElementById('movQty').select(),50);
+  document.getElementById('movQty').value='1';document.getElementById('movWho').value='';
+  openOv('ovMov');setTimeout(()=>document.getElementById('movQty').select(),50);
 }
 function saveMov() {
   const id=document.getElementById('movId').value,type=document.getElementById('movType').value;
   const qty=n(document.getElementById('movQty').value,0);
+  const who=document.getElementById('movWho').value;
   if(qty<=0){alert('La cantidad debe ser mayor a 0.');return;}
   const it=S.items.find(i=>i.id===id);if(!it)return;
   if(type==='entrada')it.bodega=(it.bodega||0)+qty;
   else{if(qty>ef(it)){alert(`Stock insuficiente. Disponible: ${ef(it)}`);return;}it.retirado=(it.retirado||0)+qty;it.lastOut=Date.now();}
+  logMov(it,type,qty,who);
   save();closeOv('ovMov');renderTable();renderStats();if(ui.view==='map'){buildShelfNav();buildMapView();if(currentCell)renderCellPanel(currentCell);}
 }
 
@@ -1556,6 +1591,45 @@ function posDiagnostic() {
       <b>${esc(p)}</b><span style="color:var(--mu)">${c}</span>${mapped?'<span style="color:var(--ok);font-size:.68rem">✓</span>':'<span style="color:var(--warn);font-size:.68rem">sin mapa</span>'}
     </span>`;
   }).join('');
+}
+
+// ── HISTORIAL DE MOVIMIENTOS (Obrist) ─────────────────────────────────────────
+function openHistory() {
+  document.getElementById('historySearch').value='';
+  renderHistory();
+  openOv('ovHistory');
+}
+function renderHistory() {
+  const q=(document.getElementById('historySearch').value||'').toLowerCase();
+  const log=(S.movLog||[]).filter(e=>{
+    if(!q)return true;
+    return[e.name,e.pos,e.who,e.category].join(' ').toLowerCase().includes(q);
+  });
+  const body=document.getElementById('historyBody');
+  if(!log.length){body.innerHTML='<div style="color:var(--mu);font-size:.84rem;padding:20px 0;text-align:center">Sin movimientos registrados.</div>';return;}
+  let lastDay='',html='';
+  for(const e of log){
+    const d=new Date(e.ts);
+    const day=d.toLocaleDateString('es-CL',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+    if(day!==lastDay){html+=`<div style="font-size:.7rem;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.05em;padding:${lastDay?'14px':'2px'} 0 6px">${esc(day)}</div>`;lastDay=day;}
+    const time=d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    const isOut=e.type==='salida';
+    const badge=isOut?`<span class="badge br">📤 Salida</span>`:`<span class="badge bg">📥 Devolución</span>`;
+    html+=`<div class="lev-item" style="margin-bottom:7px;padding:11px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="min-width:0">
+          <div style="font-weight:700;font-size:.87rem">${esc(e.name)}</div>
+          <div style="font-size:.72rem;color:var(--mu);margin-top:2px">${[e.pos,e.category].filter(Boolean).map(esc).join(' · ')}${e.who?` · 👤 ${esc(e.who)}`:''}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          ${badge}
+          <div style="font-size:.78rem;font-weight:800;margin-top:4px">${e.qty} uds</div>
+          <div style="font-size:.66rem;color:var(--mu);margin-top:1px">${time}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+  body.innerHTML=html;
 }
 
 // INIT
